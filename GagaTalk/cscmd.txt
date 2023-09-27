@@ -1,0 +1,14 @@
+/**
+ * CS commands(events):
+ * hs <suid> <name> [token] [-u <uuid> -v <client version>]  : c->s handshake
+ * ch <suid> <ok?auth?ban?new?err> [-t <token: for the new user>  -m <message> -v <server version>] s->c response of hs
+ * cd <chid> [-n <name> -p <parent channel> -d <description> -c <channel count :1 or 2> -b <bitrate>  -n <current online>]    : s->c channel desc
+ * rd <suid> [-n <name> -c  <current channel id> -u <uuid> -l:user leave]  : s->c :remote client info.
+ * j  <chid> : c->s request to join
+ * s  <chid> <session id> <cert code> [-b <bitrate> -d <latancy: from 2.5ms to 120ms> -u <usage: voip or muisc> -c <channel: 1 or 2>]: s->c return session id
+ * v  <chid> <session id> <channel state:[0:unavaliable, 1:avaliable]> : s->c voip verification passed
+ * l  <chid> : c->s leave channel
+ * cc <chid> [-c <voice channel count> -b <bitrate> -s <new session id> -t <cert code>]  : s->c channel voice config change notify
+ * ms <chid> <message> : c->s send message
+ * mr <chid> <suid> <name> <message> : s->c received message 
+ */

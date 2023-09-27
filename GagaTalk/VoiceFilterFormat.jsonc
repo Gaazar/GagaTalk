@@ -1,0 +1,30 @@
+//Voice Filter
+[
+    {
+        "name": "name",
+        "type": "RNNDenoise",
+        "args": {},
+        "enable": true
+    },
+    {
+        "name": "name",
+        "type": "Compressor",
+        "args": {
+            "ratio": "10",// 10:1
+            "threshold": -18.0, //-18.0db
+            "attack": 6,//ms
+            "release": 60,//ms
+            "gain": 0//db
+        },
+        "enable": true
+    },
+    {
+        "name": "name",
+        "type": "gain&clamp",
+        "args": {
+            "gain": 3,
+            "clamp": 0.0
+        },
+        "enable": true
+    }
+]

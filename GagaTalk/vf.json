@@ -1,0 +1,29 @@
+[
+    {
+        "name": "name",
+        "type": "RNNDenoise",
+        "args": {},
+        "enable": true
+    },
+    {
+        "name": "name",
+        "type": "Compressor",
+        "args": {
+            "ratio": 10,
+            "threshold": -18.0,
+            "attack": 6,
+            "release": 60,
+            "gain": 0
+        },
+        "enable": true
+    },
+    {
+        "name": "name",
+        "type": "Gain&Clamp",
+        "args": {
+            "gain": 3,
+            "clamp": 0.0
+        },
+        "enable": true
+    }
+]
