@@ -239,32 +239,27 @@ struct voice_playback//auto convert channels and samplerate
 	WAVEFORMATEX* wfmt;
 	FrameAligner fa;
 	Resampler* rsmplr = nullptr;
+	float volume_mul = 1;
+	bool mute = false;
 	bool discarded = false;
 
 public:
 	float get_volume()
 	{
-		float v;
-		auto hr = aud_vol->GetMasterVolume(&v);
-		return mul_to_db(v);
+		return mul_to_db(volume_mul);
 	}
 	float set_volume(float v)
 	{
-		v = db_to_mul(v);
-		auto hr = aud_vol->SetMasterVolume(v, nullptr);
-		assert(hr == S_OK);
+		volume_mul = db_to_mul(v);
 		return v;
 	}
 	bool get_mute()
 	{
-		BOOL v;
-		auto hr = aud_vol->GetMute((BOOL*)&v);
-		return v;
+		return mute;
 	}
 	bool set_mute(bool v)
 	{
-		auto hr = aud_vol->SetMute(v, nullptr);
-		assert(hr == S_OK);
+		mute = v;
 		return v;
 	}
 	void post_audio_frame(AudioFrame* af)
@@ -555,7 +550,8 @@ int voice_playback::create_devices(std::string device_id)
 				AUDCLNT_E_BUFFER_TOO_LARGE;
 				unsigned full = 0, padding = 0;
 				AudioFrame f;
-				if (aud_buffer.read(&f) && !p_master_silent)
+				float bus_vol = p_master_mul * volume_mul;
+				if (aud_buffer.read(&f) && !p_master_silent && !mute)
 				{
 					hr = aud_cli->GetBufferSize(&full);
 					assert(hr == S_OK);
@@ -564,12 +560,18 @@ int voice_playback::create_devices(std::string device_id)
 					int frames = full - padding;
 					hr = aud_out->GetBuffer(frames, &pcm);
 					assert(hr == S_OK);
+					if (hr == AUDCLNT_E_OUT_OF_ORDER)
+					{
+						printf("AUDCLNT_E_OUT_OF_ORDER at voice_playback\n");
+						std::this_thread::sleep_for(std::chrono::milliseconds(500)); 
+						continue;
+					}
 					int min_smp = min(f.nSamples, frames);
 					for (int i = 0; i < min_smp; i++)
 					{
 						for (int c = 0; c < wfmt->nChannels; c++)
 						{
-							((float*)pcm)[i * wfmt->nChannels + c] = f.samples[i] * p_master_mul;
+							((float*)pcm)[i * wfmt->nChannels + c] = f.samples[i] * bus_vol;
 						}
 					}
 
@@ -626,7 +628,15 @@ void connection::on_recv_voip_pack(const char* buffer, int len)
 	if (entities.count(rid))
 	{
 		if (entities[rid]->playback)
+		{
 			entities[rid]->playback->post_opus_pack(buffer + 4, len - 4);
+			entities[rid]->n_pak++;
+		}
+		else 
+		{
+			//printf("empty playback at on_recv_voip_pack\n");
+			//(*((int*)0)) = 0;
+		}
 	}
 
 

@@ -386,6 +386,14 @@ int shell_main()
 				int* nptr = nullptr;
 				*nptr = 768;
 			}
+			else if (cmd[0] == "de")
+			{
+				for (auto i : c.entities)
+				{
+					printf("%s(%u)[%u]: vp=%p, Npak=%u\n", i.second->name.c_str(), i.second->suid,
+						i.second->current_chid, i.second->playback, i.second->n_pak);
+				}
+			}
 			print_head();
 		}
 	}

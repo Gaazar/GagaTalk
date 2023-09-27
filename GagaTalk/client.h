@@ -32,6 +32,7 @@ struct entity : RemoteClientDesc
 {
 	voice_playback* playback = nullptr;
 	connection* conn = nullptr;
+	uint32_t n_pak = 0;
 	float get_volume();
 	float set_volume(float);
 	bool get_mute();
