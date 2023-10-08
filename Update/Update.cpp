@@ -13,7 +13,9 @@ namespace fs = std::filesystem;
 
 int main()
 {
-	std::cout << "GagaUpdate!\nWait for 3s...\n";
+	WCHAR cwd[512];
+	GetCurrentDirectory(512, cwd);
+	std::wcout << L"GagaUpdate!\n" << cwd << L"\nWait for 3s...\n";
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 	bool checked = true;
 	zip_file z("Update.pak");
@@ -104,7 +106,7 @@ int main()
 		h_Process = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, u_ExplorerPID);
 		OpenProcessToken(h_Process, TOKEN_DUPLICATE, &h_Token);
 		DuplicateTokenEx(h_Token, TOKEN_ALL_ACCESS, 0, SecurityImpersonation, TokenPrimary, &hTokenUser);
-		ret = CreateProcessWithTokenW(hTokenUser, NULL, L"GagaTalk.exe", (WCHAR*)L"", NORMAL_PRIORITY_CLASS, NULL, NULL, &si, &pi);
+		ret = CreateProcessWithTokenW(hTokenUser, NULL, L"GagaTalk.exe", (WCHAR*)L"", NORMAL_PRIORITY_CLASS, NULL, cwd, &si, &pi);
 		if (h_Token) {
 			CloseHandle(h_Token);
 		}

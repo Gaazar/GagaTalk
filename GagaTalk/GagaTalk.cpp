@@ -448,6 +448,9 @@ int main()
 	//sqlite3* sql;
 	//hr = sqlite3_open("config.db", &sql);
 	//std::thread thread_play2(PlayQueued, pEnumerator, &rec_f);
+	//WCHAR cwd[512];
+	//GetCurrentDirectory(512, cwd);
+	//std::wcout << cwd << std::endl;
 	configs_init();
 	shell_main();
 	//raw_out_file.close();
