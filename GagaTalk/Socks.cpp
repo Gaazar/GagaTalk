@@ -212,3 +212,9 @@ int socket_init()
 
 	return hr;
 }
+int socket_uninit()
+{
+
+	WSACleanup();
+	return 0;
+}

@@ -6,7 +6,7 @@
 #endif
 #ifdef __GNUC__
 #define INVALID_SOCKET -1
-#define closesocket(sk) shutdown(sk, SHUT_RDWR)
+#define closesocket(sk) shutdown(sk, SHUT_RDWR);close(sk)
 #endif
 connection::connection()
 {
@@ -45,8 +45,8 @@ void connection::on_recv_cmd(command& cmd)
 {
 	if (!server) return;
 	std::string sql = "";
-	//if (cmd[0] != "ping")
-	printf("[C:%d][%s]\n", sk_cmd, cmd.str().c_str());
+	if (cmd[0] != "ping")
+		printf("[C:%d][%s]\n", sk_cmd, cmd.str().c_str());
 	if (cmd[0] == "hs")
 	{
 		if (cmd.n_args() < 3)

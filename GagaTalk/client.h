@@ -7,6 +7,7 @@
 #include <opus/opus.h>
 #include <functional>
 
+#define BUILD_SEQ 11 
 struct connection;
 struct config
 {
@@ -102,11 +103,15 @@ struct connection :ServerDesc
 	bool get_client_mute(uint32_t suid);
 
 };
-int gagatalk_init();
 int client_init();
 int configs_init();
 int platform_init();
 int socket_init();
+int client_uninit();
+int configs_uninit();
+int platform_uninit();
+int socket_uninit();
+
 voice_playback* plat_create_vpb();
 void plat_delete_vpb(voice_playback*);
 recorder_ref* plat_create_vr();
@@ -120,6 +125,15 @@ bool plat_set_global_silent(bool m);
 float plat_get_global_volume();
 bool plat_get_global_mute();
 bool plat_get_global_silent();
+void sapi_set_volume(int v);
+void sapi_set_rate(int r);
+int sapi_init();
+int sapi_uninit();
+void sapi_set_profile(std::string s);
+std::string sapi_get_profile();
+
+
+void client_check_update();
 
 int w2a(const wchar_t* in, int len, char** out);
 int a2w(const char* in, int len, wchar_t** out);
@@ -143,6 +157,13 @@ int conf_set_global_silent(bool m);
 int conf_get_global_volume(float& db);
 int conf_get_global_mute(bool& m);
 int conf_get_global_silent(bool& m);
+int conf_get_sapi(std::string& s);
+int conf_set_sapi(std::string s);
+
+int sapi_say(std::string s);
+int sapi_cancel();
+int sapi_disable();
+int sapi_enable();
 
 
 void enable_voice_loopback();

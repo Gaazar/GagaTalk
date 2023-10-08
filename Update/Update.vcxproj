@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{9c3d35a4-7c98-471f-903d-94bffcc2b8ab}</ProjectGuid>
-    <RootNamespace>GagaTalk</RootNamespace>
+    <ProjectGuid>{6d286448-9284-4898-a74d-5e4399f86bb9}</ProjectGuid>
+    <RootNamespace>Update</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -78,13 +78,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <ExternalIncludePath>$(INCLUDE);$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>F:\libs\debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <ExternalIncludePath>$(INCLUDE);$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>F:\libs\release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -118,8 +114,9 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,44 +129,24 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <UACExecutionLevel>AsInvoker</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="audio_process.cpp" />
-    <ClCompile Include="client.cpp" />
-    <ClCompile Include="CliShell.cpp" />
-    <ClCompile Include="configs.cpp" />
-    <ClCompile Include="FrameAligner.cpp" />
-    <ClCompile Include="GagaTalk.cpp" />
-    <ClCompile Include="native_util.cpp" />
-    <ClCompile Include="platform.cpp" />
-    <ClCompile Include="Resampler.cpp" />
-    <ClCompile Include="Socks.cpp" />
-    <ClCompile Include="Compressor.cpp" />
-    <ClCompile Include="speak.cpp" />
-    <ClCompile Include="sqlite\sqlite3.c" />
-    <ClCompile Include="WebShell.cpp" />
+    <ClCompile Include="Update.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AudioDevices.h" />
-    <ClInclude Include="audio_process.h" />
-    <ClInclude Include="client.h" />
-    <ClInclude Include="IAudioFrameProcessor.h" />
-    <ClInclude Include="native_util.hpp" />
-    <ClInclude Include="RingQueue.h" />
-    <ClInclude Include="gt_defs.h" />
-    <ClInclude Include="speak.h" />
-    <ClInclude Include="sql.h" />
+    <ClInclude Include="http.h" />
+    <ClInclude Include="zip_file.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -19,6 +19,17 @@ void print_usage_conf()
 	printf("pu <效果器类型>	: 添加效果器(RNNDenoise,Compressor,Gain&Clamp)\n\tRNNDenoise: AI降噪\n\tCompressor: 压缩器，响度均衡\n\tGain&Clamp: 增益，削波\n");
 	printf("m <索引> <参数名(括号里的英文)> <参数值>	: 修改效果器参数\n");
 }
+void print_usage_sapi()
+{
+	printf("sapi commands:\n");
+	printf("q	: 离开设置\n");
+	printf("v <音量>	: 设置音量0-100\n");
+	printf("r <语速>	: 设置语速0-20\n");
+	printf("d	: 禁用朗读\n");
+	printf("e	: 启用朗读\n");
+	printf("<测试朗读文本>	: 朗读自定义文本\n");
+
+}
 void print_usage()
 {
 	printf("commands:\n");
@@ -31,8 +42,9 @@ void print_usage()
 	printf("cvi <设备ID>	: 切换输入设备 设备ID为最上面列表的{...}.{.....}. 不能填输出设备的ID，不然死给你看。\n");
 	printf("cvo <设备ID>	: 切换输出设备 设备ID为最上面列表的{...}.{.....}. 不能填输入设备的ID，不然死给你看。\n");
 	printf("ls : 显示频道列表和在线用户.\n");
-	printf("conf : 设置.\n");
 	printf("v <用户代码 一串数字> <音量:0到100>	: ls 列表里面没有[]用户名左边的数字\n");
+	printf("conf : 设置.\n");
+	printf("sapi : 朗读设置.\n");
 	//printf("下面都没实现\n");
 	//printf("m	[client name|client id] <volume {0,100}>	: mute or unmute specified clients, show current mute state if only m.\n");
 
@@ -75,7 +87,7 @@ void shell_conf()
 			if (cmd[0] == "q")
 			{
 				path.pop_back();
-				disable_voice_loopback();
+				disable_voice_loopback();	
 				return;
 			}
 			else if (cmd[0] == "ls")
@@ -213,10 +225,69 @@ void shell_conf()
 		}
 	}
 }
+void shell_sapi()
+{
+	command_buffer cb;
+	command cmd;
+	char ch;
+	path.push_back("sapi");
+	print_usage_sapi();
+	print_head();
+	while (!terminated)
+	{
+		ch = getchar();
+		if (cb.append(&ch, 1))
+		{
+
+			//int nn = cb.parse(cmd);
+
+			//cmd.clear();
+			//continue;
+			cmd.clear();
+			print_head();
+			if (!cb.parse(cmd)) continue;
+			if (cmd[0] == "q")
+			{
+				path.pop_back();
+				conf_set_sapi(sapi_get_profile());
+				printf("\n");
+				return;
+			}
+			if (cmd[0] == "v")
+			{
+				if (cmd.n_args() < 2) continue;
+				int v = stru64(cmd[1]);
+				if (v < 0) v = 0;
+				if (v > 100) v = 100;
+				sapi_set_volume(v);
+			}
+			else if (cmd[0] == "r")
+			{
+				if (cmd.n_args() < 2) continue;
+				int v = stru64(cmd[1]) - 10;
+				if (v < -10) v = -10;
+				if (v > 10) v = 10;
+				sapi_set_rate(v);
+			}
+			else if (cmd[0] == "e")
+			{
+				sapi_enable();
+			}
+			else if (cmd[0] == "d")
+			{
+				sapi_disable();
+			}
+			else
+			{
+				sapi_say(cmd.str());
+			}
+
+		}
+	}
+}
 int shell_main()
 {
 	srand(time(nullptr));
-	platform_init();
 	client_init();
 	print_usage();
 	char ch;
@@ -230,6 +301,7 @@ int shell_main()
 	//{
 	//	printf("[%s]\n", argv[i]);
 	//}
+	client_check_update();
 	print_head();
 	command cmd;
 	bool vlb_ = false;
@@ -380,6 +452,10 @@ int shell_main()
 			else if (cmd[0] == "conf")
 			{
 				shell_conf();
+			}
+			else if (cmd[0] == "sapi")
+			{
+				shell_sapi();
 			}
 			else if (cmd[0] == "dump")
 			{

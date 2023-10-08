@@ -3,59 +3,13 @@
 #define FMT_HEADER_ONLY
 #include <fmt/core.h>
 #include <assert.h>
-#include <sapi.h>
 #include <limits>
-struct speak
-{
-	std::vector<std::string> queue;
-	std::mutex m_q;
-	ISpVoice* pVoice = nullptr;
-	std::thread th_speak;
-	bool discard = false;
-	void say(std::string s)
-	{
-		std::lock_guard<std::mutex> _g(m_q);
-		queue.push_back(s);
-	}
-	speak()
-	{
-		HRESULT hr = CoCreateInstance(CLSID_SpVoice, NULL, CLSCTX_ALL, IID_ISpVoice, (void**)&pVoice);
-		assert(hr == S_OK);
-		th_speak = std::thread([this]()
-			{
-				CoInitialize(NULL);
-				while (!discard)
-				{
-					if (queue.size())
-					{
-						wchar_t* wcs;
-						{
-							std::lock_guard<std::mutex> _g(m_q);
-							a2w(queue[0].c_str(), queue[0].length(), &wcs);
-							queue.erase(queue.begin());
-						}
-						auto hr = pVoice->Speak(wcs, 0, NULL);
-						delete wcs;
-					}
-					else
-					{
-						std::this_thread::sleep_for(std::chrono::milliseconds(50));
-					}
-
-				}
-				CoUninitialize();
-			});
-	}
-	~speak()
-	{
-		if (discard) return;
-		discard = true;
-		th_speak.join();
-		queue.clear();
-		pVoice->Release();
-	}
-};
-speak* sapi = nullptr;
+#include "native_util.hpp"
+#include <configor/json.hpp>
+#include "speak.h"
+#include <windows.h>
+#include <filesystem>
+using namespace configor;
 void connection::on_recv_cmd(command& cmd)
 {
 	if (status == state::verifing)
@@ -71,9 +25,7 @@ void connection::on_recv_cmd(command& cmd)
 				{
 					conf_set_token(host, suid, cmd["-t"]);
 				}
-				if (!sapi)
-					sapi = new speak();
-				sapi->say(fmt::format("已连接服务器 {}", host));
+				sapi_join_server(host);
 			}
 			else
 			{
@@ -112,7 +64,7 @@ void connection::on_recv_cmd(command& cmd)
 				if (cmd.has_option("-l"))
 					return;
 				auto ne = new entity();
-				entities[suid] = ne ;
+				entities[suid] = ne;
 				ne->suid = suid;
 				ne->conn = this;
 				new_entity = true;
@@ -124,7 +76,7 @@ void connection::on_recv_cmd(command& cmd)
 				auto c = e->current_chid;
 				channels[c]->erase(e);
 				if (e->current_chid == chid)
-					sapi->say(fmt::format("'{}'已离开频道", e->name));
+					sapi_left_channel(e->name);
 				delete e;
 			}
 			else
@@ -141,7 +93,7 @@ void connection::on_recv_cmd(command& cmd)
 				if (new_entity)
 				{
 					if (e->current_chid == chid && mic)
-						sapi->say(fmt::format("'{}'已加入频道", e->name));
+						sapi_join_channel(e->name);
 					channels[e->current_chid]->join(e, true);
 					if (suid == this->suid)
 					{
@@ -160,6 +112,13 @@ void connection::on_recv_cmd(command& cmd)
 					}
 					channels[last_chid]->erase(e);
 					channels[e->current_chid]->join(e);
+					if (suid != this->suid)
+					{
+						if (e->current_chid == chid)
+						{
+							sapi_join_channel(e->name);
+						}
+					}
 
 				}
 			}
@@ -237,7 +196,7 @@ void connection::channel_switch(uint32_t from, uint32_t to)
 	if (channels.count(to))
 	{
 		current = channels[to];
-		sapi->say(fmt::format("已加入频道'{}'", current->name));
+		sapi_say(fmt::format("已加入频道'{}'", current->name));
 		for (auto i : current->entities)
 		{
 			if (i->suid != suid)
@@ -277,7 +236,7 @@ void channel::erase(uint32_t suid)
 	}
 	if (e && chid == conn->current->chid)
 	{
-		sapi->say(fmt::format("'{}'已离开频道", e->name));
+		sapi_say(fmt::format("'{}'已离开频道", e->name));
 		e->remove_playback();
 	}
 
@@ -327,6 +286,7 @@ bool connection::get_client_mute(uint32_t suid)
 
 int client_init()
 {
+	platform_init();
 	std::string str;
 	if (conf_get_input_device(str))
 	{
@@ -344,6 +304,11 @@ int client_init()
 	plat_set_global_mute(b);
 	conf_get_global_silent(b);
 	plat_set_global_silent(b);
+	conf_get_sapi(str);
+
+	sapi_init();
+
+	str = sapi_get_profile();
 	return 0;
 }
 
@@ -355,4 +320,79 @@ void entity::load_profile()
 	set_volume(v);
 	conf_get_uc_mute(conn->host, suid, b);
 	set_mute(b);
+}
+using namespace native;
+download_pool c_dp;
+void client_check_update()
+{
+	namespace fs = std::filesystem;
+	printf("正在检查更新...");
+	auto t = download_task("https://gaazar.cc/gagatalk/version.json", [](download_pool::task_status s, download_task* t)
+		{
+			if (s == download_pool::task_status::finished)
+			{
+				std::string sutf8(t->data, t->data + t->size);
+				//auto ws = sutil::s2w(sutf8, CP_UTF8);
+				json j = json::parse(sutf8);
+				auto lv = j["latest"].as_integer();
+				auto url = j["download"].as_string();
+				printf("OK\n");
+				if (lv > BUILD_SEQ)
+				{
+					auto dt = download_task(url, "Update.pak",
+						[](download_pool::task_status s, download_task* t)
+						{
+							printf("Update package download status:%d\n", s);
+							if (s == download_pool::task_status::finished)
+							{
+								client_uninit();
+								SHELLEXECUTEINFO ShExecInfo = { 0 };
+								ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+								ShExecInfo.fMask = SEE_MASK_DEFAULT;
+								ShExecInfo.hwnd = NULL;
+								ShExecInfo.lpVerb = L"runas";
+								ShExecInfo.lpFile = L"Update.exe";
+								ShExecInfo.lpParameters = L"";
+								ShExecInfo.lpDirectory = NULL;
+								ShExecInfo.nShow = SW_SHOW;
+								ShExecInfo.hInstApp = NULL;
+								ShellExecuteEx(&ShExecInfo);
+								exit(80);
+							}
+						});
+					if (j["log"].is_string())
+					{
+						printf("更新日志:\n%s\n", sutil::w2s(sutil::s2w(j["log"].as_string(), CP_UTF8)).c_str());
+					}
+					printf("正在下载更新...\n");
+					c_dp.join_task(&dt);
+				}
+				else
+					printf("已经是最新版本。\n");
+				if (fs::exists("./temp/Update.exe"))
+				{
+					std::this_thread::sleep_for(std::chrono::seconds(3));
+					std::error_code ec;
+					fs::remove("./Update.exe", ec);
+					if (ec) printf("UpdateError:%s at remove raw\n", ec.message().c_str());
+					ec.clear();
+					fs::copy("./temp/Update.exe", "./Update.exe", ec);
+					if (ec) printf("UpdateError:%s at copy \n", ec.message().c_str());
+					ec.clear();
+					fs::remove("./temp/Update.exe", ec);
+					if (ec) printf("UpdateError:%s at remove new\n", ec.message().c_str());
+				}
+			}
+			else
+				printf("\n无法检测更新信息。\n");
+		});
+	c_dp.join_task(&t);
+}
+
+int client_uninit()
+{
+	terminated = true;
+	platform_uninit();
+	sapi_uninit();
+	return 0;
 }

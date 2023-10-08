@@ -51,6 +51,12 @@
     <ClCompile Include="client.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="native_util.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="speak.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IAudioFrameProcessor.h">
@@ -72,6 +78,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="sql.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="native_util.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="speak.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

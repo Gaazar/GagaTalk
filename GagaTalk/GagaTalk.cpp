@@ -52,11 +52,10 @@ int GenerateMiniDump(PEXCEPTION_POINTERS pExceptionPointers)
 
 	// 创建 dmp 文件件
 	TCHAR szFileName[MAX_PATH] = { 0 };
-	const TCHAR* szVersion = L"gtdumpv0.8";
 	SYSTEMTIME stLocalTime;
 	GetLocalTime(&stLocalTime);
-	wsprintf(szFileName, L"%s-%04d%02d%02d-%02d%02d%02d.dmp",
-		szVersion, stLocalTime.wYear, stLocalTime.wMonth, stLocalTime.wDay,
+	wsprintf(szFileName, L"gtdumpv%u-%04d%02d%02d-%02d%02d%02d.dmp",
+		BUILD_SEQ, stLocalTime.wYear, stLocalTime.wMonth, stLocalTime.wDay,
 		stLocalTime.wHour, stLocalTime.wMinute, stLocalTime.wSecond);
 	HANDLE hDumpFile = CreateFile(szFileName, GENERIC_READ | GENERIC_WRITE,
 		FILE_SHARE_WRITE | FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);

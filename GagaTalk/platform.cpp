@@ -563,7 +563,7 @@ int voice_playback::create_devices(std::string device_id)
 					if (hr == AUDCLNT_E_OUT_OF_ORDER)
 					{
 						printf("AUDCLNT_E_OUT_OF_ORDER at voice_playback\n");
-						std::this_thread::sleep_for(std::chrono::milliseconds(500)); 
+						aud_out->ReleaseBuffer(0, 0); 
 						continue;
 					}
 					int min_smp = min(f.nSamples, frames);
@@ -736,20 +736,25 @@ void voice_recorder::set_filter(std::string s)
 void enable_voice_loopback()
 {
 	if (!p_pb_loopback)
-		p_pb_loopback = plat_create_vpb();
-	p_rec_lb_ref = plat_create_vr();
-
-	p_rec_lb_ref->callback = [](AudioFrame* f)
 	{
-		p_pb_loopback->post_audio_frame(f);
-	};
+		p_pb_loopback = plat_create_vpb();
+		p_rec_lb_ref = plat_create_vr();
+
+		p_rec_lb_ref->callback = [](AudioFrame* f)
+		{
+			p_pb_loopback->post_audio_frame(f);
+		};
+	}
 }
 void disable_voice_loopback()
 {
-	plat_delete_vr(p_rec_lb_ref);
 	if (p_pb_loopback)
-		plat_delete_vpb(p_pb_loopback);
-	p_pb_loopback = nullptr;
+	{
+		plat_delete_vr(p_rec_lb_ref);
+		if (p_pb_loopback)
+			plat_delete_vpb(p_pb_loopback);
+		p_pb_loopback = nullptr;
+	}
 
 }
 bool plat_set_filter(std::string filter)
@@ -804,4 +809,11 @@ uint32_t randu32()
 		v |= ((uint64_t)rand() % 0xFF) << (i * 8);
 	}
 	return v;
+}
+
+int platform_uninit()
+{
+	socket_uninit();
+	::CoUninitialize();
+	return 0;
 }

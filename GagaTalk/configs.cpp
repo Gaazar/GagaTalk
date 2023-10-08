@@ -57,6 +57,17 @@ int upgrade()
 		int r = sqlite3_exec(db, sql.c_str(), nullptr, 0, &err_msg);
 		assert(!r);
 	}
+	if (db_version == 4)
+	{
+		sql =
+			"\
+			ALTER TABLE config ADD COLUMN sapi TEXT DEFAULT NULL;\
+			UPDATE meta set version = 5 where id = 0;\
+			";
+		db_version = 5;
+		int r = sqlite3_exec(db, sql.c_str(), nullptr, 0, &err_msg);
+		assert(!r);
+	}
 	return 0;
 }
 int create_structure()
@@ -77,7 +88,7 @@ int create_structure()
 	if (kv.size() == 0)
 	{
 		//sql = "UPDATE meta SET version = 1, app_ver = 1 where id = 0;";
-		sql = "INSERT INTO meta (id,version,app_ver) VALUES (0,4,1);";
+		sql = "INSERT INTO meta (id,version,app_ver) VALUES (0,5,1);";
 		r = sqlite3_exec(db, sql, nullptr, 0, &err_msg);
 		assert(!r);
 	}
@@ -117,6 +128,7 @@ int create_structure()
 		mute INT NOT NULL DEFAULT 0,\
 		silent INT NOT NULL DEFAULT 0,\
 		volume REAL NOT NULL DEFAULT 0.0,\
+		sapi TEXT DEFAULT NULL,\
 		current INT NOT NULL DEFAULT 1\
 		);";
 	r = sqlite3_exec(db, sql, nullptr, 0, &err_msg);
@@ -476,4 +488,34 @@ int conf_get_global_silent(bool& m)
 		return 1;
 	}
 	return 0;
+}
+
+int conf_get_sapi(std::string& s)
+{
+	char* emsg = nullptr;
+	auto sql = sqlite3_mprintf("SELECT sapi FROM config WHERE current = 1 limit 1;");
+	_cmap kv;
+	int ret = 0;
+	s = "{}";
+	auto hr = sqlite3_exec(db, sql, [&](_cmap& kv)
+		{
+			if (kv.size() && kv["sapi"])
+			{
+				s = kv["sapi"];
+				ret = 1;
+			}
+		}, &emsg);
+	assert(!hr);
+
+	return ret;
+
+}
+int conf_set_sapi(std::string s)
+{
+	char* emsg = nullptr;
+	auto sql = sqlite3_mprintf("UPDATE config SET sapi = %Q WHERE current = 1;", s.c_str());
+	auto hr = sqlite3_exec(db, sql, nullptr, nullptr, &emsg);
+	sqlite3_free(sql);
+	assert(!hr);
+	return 1;
 }
