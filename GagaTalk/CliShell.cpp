@@ -45,6 +45,7 @@ void print_usage()
 	printf("v <用户代码 一串数字> <音量:0到100>	: ls 列表里面没有[]用户名左边的数字\n");
 	printf("conf : 设置.\n");
 	printf("sapi : 朗读设置.\n");
+	printf("exit : 退出程序.\n");
 	//printf("下面都没实现\n");
 	//printf("m	[client name|client id] <volume {0,100}>	: mute or unmute specified clients, show current mute state if only m.\n");
 
@@ -87,7 +88,7 @@ void shell_conf()
 			if (cmd[0] == "q")
 			{
 				path.pop_back();
-				disable_voice_loopback();	
+				disable_voice_loopback();
 				return;
 			}
 			else if (cmd[0] == "ls")
@@ -289,10 +290,22 @@ int shell_main()
 {
 	srand(time(nullptr));
 	client_init();
+	std::vector<audio_device> devs;
+	plat_enum_input_device(devs);
+	printf("输入设备：\n");
+	for (auto& i : devs)
+	{
+		printf("\t%s: %s\n", i.name.c_str(), i.id.c_str());
+	}
+	plat_enum_output_device(devs);
+	printf("输出设备：\n");
+	for (auto& i : devs)
+	{
+		printf("\t%s: %s\n", i.name.c_str(), i.id.c_str());
+	}
 	print_usage();
 	char ch;
 	command_buffer cb;
-	connection c;
 	//int a = cb.append(t, sizeof(t));
 	//a = cb.append(t1, sizeof(t1));
 	//a = cb.append(t2, sizeof(t2));
@@ -317,72 +330,8 @@ int shell_main()
 			//continue;
 			cmd.clear();
 			if (!cb.parse(cmd)) continue;
-			if (cmd[0] == "ls")
-			{
-				if (c.status != connection::state::established) continue;
-				for (auto& c : c.channels)
-				{
-					printf("[%u: %s]\n", c.first, c.second->name.c_str());
-					for (auto& u : c.second->entities)
-					{
-						printf("\t%u: %s\n", u->suid, u->name.c_str());
-					}
-				}
-			}
-			else if (cmd[0] == "v")
-			{
-				if (cmd.n_args() < 3)
-				{
-					printf("参数不足\n");
-					continue;
-				}
-				uint32_t suid = stru64(cmd[1]);
-				if (!c.entities.count(suid))
-				{
-					printf("用户不存在\n");
-					continue;
-				}
-				if (suid == c.suid)
-				{
-					printf("不能调自己\n");
-					continue;
-				}
-				c.set_client_volume(suid, percent_to_db(stru64(cmd[2]) / 100.f));
-				printf("OK\n");
-
-			}
-			else if (cmd[0] == "m")
-			{
-				if (cmd.n_args() < 2)
-				{
-					printf("参数不足\n");
-					continue;
-				}
-				uint32_t suid = stru64(cmd[1]);
-				if (!c.entities.count(suid))
-				{
-					printf("用户不存在\n");
-					continue;
-				}
-				if (suid == c.suid)
-				{
-					printf("不能调自己\n");
-					continue;
-				}
-				c.set_client_mute(suid, !c.get_client_mute(suid));
-				printf("OK\n");
-
-			}
-			else if (cmd[0] == "c")
-			{
-				if (cmd.n_args() < 3) continue;
-				if (c.status != connection::state::disconnect) continue;
-				conf_set_username(cmd[2]);
-				auto cr = c.connect(cmd[1].c_str(), 7970);
-				printf("connect result: %d\n", cr);
-
-			}
-			else if (cmd[0] == "vlb")
+			auto c = client_get_current_server();
+			if (cmd[0] == "vlb")
 			{
 				vlb_ = !vlb_;
 				if (vlb_)
@@ -437,11 +386,6 @@ int shell_main()
 				conf_set_global_silent(s);
 				printf("%s\n", s ? "silent" : "not silent");
 			}
-			else if (cmd[0] == "j")
-			{
-				if (cmd.n_args() < 2) continue;
-				c.join_channel(stru64(cmd[1]));
-			}
 			else if (cmd[0] == "vm")
 			{
 				if (cmd.n_args() < 2) continue;
@@ -462,17 +406,101 @@ int shell_main()
 				int* nptr = nullptr;
 				*nptr = 768;
 			}
-			else if (cmd[0] == "de")
+			else if (cmd[0] == "exit")
 			{
-				for (auto i : c.entities)
+				break;
+			}
+			else if (cmd[0] == "c")
+			{
+				if (cmd.n_args() < 3) continue;
+				if (c && c->status != connection::state::disconnect) continue;
+				conf_set_username(cmd[2]);
+				auto cr = client_connect(cmd[1].c_str(), 7970, &c);
+				printf("connect result: %d\n", cr);
+
+			}
+			else if (!c)
+			{
+				printf("需要先连接服务器\n");
+				print_head();
+			}
+			else if (c)
+			{
+				if (cmd[0] == "ls")
 				{
-					printf("%s(%u)[%u]: vp=%p, Npak=%u\n", i.second->name.c_str(), i.second->suid,
-						i.second->current_chid, i.second->playback, i.second->n_pak);
+					if (c->status != connection::state::established) continue;
+					for (auto& c : c->channels)
+					{
+						printf("[%u: %s]\n", c.first, c.second->name.c_str());
+						for (auto& u : c.second->entities)
+						{
+							printf("\t%u: %s\n", u->suid, u->name.c_str());
+						}
+					}
 				}
+				else if (cmd[0] == "v")
+				{
+					if (cmd.n_args() < 3)
+					{
+						printf("参数不足\n");
+						continue;
+					}
+					uint32_t suid = stru64(cmd[1]);
+					if (!c->entities.count(suid))
+					{
+						printf("用户不存在\n");
+						continue;
+					}
+					if (suid == c->suid)
+					{
+						printf("不能调自己\n");
+						continue;
+					}
+					c->set_client_volume(suid, percent_to_db(stru64(cmd[2]) / 100.f));
+					printf("OK\n");
+
+				}
+				else if (cmd[0] == "m")
+				{
+					if (cmd.n_args() < 2)
+					{
+						printf("参数不足\n");
+						continue;
+					}
+					uint32_t suid = stru64(cmd[1]);
+					if (!c->entities.count(suid))
+					{
+						printf("用户不存在\n");
+						continue;
+					}
+					if (suid == c->suid)
+					{
+						printf("不能调自己\n");
+						continue;
+					}
+					c->set_client_mute(suid, !c->get_client_mute(suid));
+					printf("OK\n");
+
+				}
+				else if (cmd[0] == "j")
+				{
+					if (cmd.n_args() < 2) continue;
+					c->join_channel(stru64(cmd[1]));
+				}
+				else if (cmd[0] == "de")
+				{
+					for (auto i : c->entities)
+					{
+						printf("%s(%u)[%u]: vp=%p, Npak=%u\n", i.second->name.c_str(), i.second->suid,
+							i.second->current_chid, i.second->playback, i.second->n_pak);
+					}
+				}
+
 			}
 			print_head();
 		}
 	}
+	client_uninit();
 
 	return 0;
 }

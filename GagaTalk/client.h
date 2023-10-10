@@ -7,8 +7,13 @@
 #include <opus/opus.h>
 #include <functional>
 
-#define BUILD_SEQ 11 
+#define BUILD_SEQ 12 
 struct connection;
+struct audio_device
+{
+	std::string name;
+	std::string id;
+};
 struct config
 {
 	std::string name;
@@ -125,6 +130,8 @@ bool plat_set_global_silent(bool m);
 float plat_get_global_volume();
 bool plat_get_global_mute();
 bool plat_get_global_silent();
+bool plat_enum_input_device(std::vector<audio_device>& ls);
+bool plat_enum_output_device(std::vector<audio_device>& ls);
 void sapi_set_volume(int v);
 void sapi_set_rate(int r);
 int sapi_init();
@@ -159,12 +166,19 @@ int conf_get_global_mute(bool& m);
 int conf_get_global_silent(bool& m);
 int conf_get_sapi(std::string& s);
 int conf_set_sapi(std::string s);
+int conf_get_servers(std::vector<server_info>& s);
 
 int sapi_say(std::string s);
 int sapi_cancel();
 int sapi_disable();
 int sapi_enable();
 
+int tray_init();
+int tray_uninit();
+
+int client_connect(std::string host, uint16_t port, connection** conn);
+int client_disconnect(connection* conn);
+connection* client_get_current_server(); //return hostname:port
 
 void enable_voice_loopback();
 void disable_voice_loopback();

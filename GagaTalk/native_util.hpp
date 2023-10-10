@@ -1,5 +1,4 @@
 ﻿#pragma once
-#undef min
 #include <string>
 #include <vector>
 #include <mutex>

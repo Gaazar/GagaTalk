@@ -57,6 +57,9 @@
     <ClCompile Include="speak.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="trayicon.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IAudioFrameProcessor.h">
@@ -83,8 +86,30 @@
     <ClInclude Include="native_util.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="speak.h">
+    <ClInclude Include="trayicon.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="delegate.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="events.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="GagaTalk.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="D:\Picture\gagatalk.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="D:\Picture\gagatalks.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

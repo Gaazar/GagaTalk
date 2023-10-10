@@ -163,6 +163,10 @@ int configs_init()
 	if (r) return r;
 	create_structure();
 }
+int configs_uninit()
+{
+	return 0;
+}
 int release_configurations()
 {
 	sqlite3_close(db);
@@ -185,6 +189,27 @@ int conf_audio_set_mute(bool m)
 {
 	return 0;
 }
+int conf_get_servers(std::vector<server_info>& s)
+{
+	s.clear();
+	char* emsg = nullptr;
+	char sql[] = "SELECT * FROM servers;";
+	auto hr = sqlite3_exec(db, sql, [&](_cmap& kv)
+		{
+			server_info si;
+			si.hostname = kv["address"];
+			si.name = kv["name"];
+			si.suid = stru64(kv["suid"]);
+			auto x = kv["icon"];
+			if (x) si.icon = x;
+			x = kv["token"];
+			if (x) si.token = x;
+			s.push_back(si);
+		}, &emsg);
+	assert(!hr);
+	return 0;
+}
+
 int conf_get_server(server_info* s) //fill hostname and others will be filled.
 {
 	if (!s) return -1;

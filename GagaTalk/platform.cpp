@@ -17,6 +17,7 @@
 #include <fstream>
 #include <mutex>
 #include "audio_process.h"
+#include "native_util.hpp"
 
 #pragma comment(lib,"opus.lib")
 #pragma comment(lib,"avrt.lib")
@@ -563,7 +564,7 @@ int voice_playback::create_devices(std::string device_id)
 					if (hr == AUDCLNT_E_OUT_OF_ORDER)
 					{
 						printf("AUDCLNT_E_OUT_OF_ORDER at voice_playback\n");
-						aud_out->ReleaseBuffer(0, 0); 
+						aud_out->ReleaseBuffer(0, 0);
 						continue;
 					}
 					int min_smp = min(f.nSamples, frames);
@@ -632,7 +633,7 @@ void connection::on_recv_voip_pack(const char* buffer, int len)
 			entities[rid]->playback->post_opus_pack(buffer + 4, len - 4);
 			entities[rid]->n_pak++;
 		}
-		else 
+		else
 		{
 			//printf("empty playback at on_recv_voip_pack\n");
 			//(*((int*)0)) = 0;
@@ -789,6 +790,64 @@ bool plat_get_global_mute()
 bool plat_get_global_silent()
 {
 	return p_master_silent;
+}
+bool plat_enum_input_device(std::vector<audio_device>& ls)
+{
+	ls.clear();
+	IMMDeviceCollection* col = nullptr;
+	p_dev_enum->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &col);
+	UINT c = 0;
+	col->GetCount(&c);
+	IMMDevice* d = nullptr;
+	for (int i = 0; i < c; i++)
+	{
+		col->Item(i, &d);
+		LPWSTR id = nullptr;
+		d->GetId(&id);
+		IPropertyStore* p = nullptr;
+		d->OpenPropertyStore(STGM_READ, &p);
+		PROPVARIANT pv;
+		if (id)
+		{
+			p->GetValue(PKEY_Device_FriendlyName, &pv);
+			ls.push_back({ sutil::w2s(pv.pwszVal) ,sutil::w2s(id) });
+			CoTaskMemFree(pv.pwszVal);
+			CoTaskMemFree(id);
+		}
+		SAFE_RELEASE(p);
+		SAFE_RELEASE(d);
+	}
+	if (col) col->Release();
+	return true;
+}
+bool plat_enum_output_device(std::vector<audio_device>& ls)
+{
+	ls.clear();
+	IMMDeviceCollection* col = nullptr;
+	p_dev_enum->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &col);
+	UINT c = 0;
+	col->GetCount(&c);
+	IMMDevice* d = nullptr;
+	for (int i = 0; i < c; i++)
+	{
+		col->Item(i, &d);
+		LPWSTR id = nullptr;
+		d->GetId(&id);
+		IPropertyStore* p = nullptr;
+		d->OpenPropertyStore(STGM_READ, &p);
+		PROPVARIANT pv;
+		if (id)
+		{
+			p->GetValue(PKEY_Device_FriendlyName, &pv);
+			ls.push_back({ sutil::w2s(pv.pwszVal) ,sutil::w2s(id) });
+			CoTaskMemFree(pv.pwszVal);
+			CoTaskMemFree(id);
+		}
+		SAFE_RELEASE(p);
+		SAFE_RELEASE(d);
+	}
+	if (col) col->Release();
+	return true;
 }
 
 

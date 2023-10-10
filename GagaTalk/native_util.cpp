@@ -5,6 +5,8 @@
 #include <mutex>
 #include <filesystem>
 #include <WinHttp.h>
+#undef min
+
 namespace fs = std::filesystem;
 
 #pragma comment(lib, "Winhttp.lib")

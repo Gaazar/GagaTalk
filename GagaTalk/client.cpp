@@ -6,10 +6,17 @@
 #include <limits>
 #include "native_util.hpp"
 #include <configor/json.hpp>
-#include "speak.h"
 #include <windows.h>
 #include <filesystem>
+#include "events.h"
+
 using namespace configor;
+
+std::map<std::string, connection*> connections;
+delegate<void(std::string type, connection* conn)> e_server;
+delegate<void(std::string type, channel* channel)> e_channel;
+delegate<void(std::string type, entity* entity)> e_entity;
+
 void connection::on_recv_cmd(command& cmd)
 {
 	if (status == state::verifing)
@@ -25,13 +32,16 @@ void connection::on_recv_cmd(command& cmd)
 				{
 					conf_set_token(host, suid, cmd["-t"]);
 				}
-				sapi_join_server(host);
+				//sapi_join_server(host);
+				e_server("join", this);
 			}
 			else
 			{
 				status = state::disconnect;
 				disconnect();
+				e_server("auth", this);
 			}
+			printf("[%s]\n", cmd.str().c_str());
 		}
 	}
 	else
@@ -76,7 +86,9 @@ void connection::on_recv_cmd(command& cmd)
 				auto c = e->current_chid;
 				channels[c]->erase(e);
 				if (e->current_chid == chid)
-					sapi_left_channel(e->name);
+				{
+					e_entity("left", std::move(e));
+				}
 				delete e;
 			}
 			else
@@ -93,7 +105,9 @@ void connection::on_recv_cmd(command& cmd)
 				if (new_entity)
 				{
 					if (e->current_chid == chid && mic)
-						sapi_join_channel(e->name);
+					{
+						e_entity("join", std::move(e));
+					}
 					channels[e->current_chid]->join(e, true);
 					if (suid == this->suid)
 					{
@@ -116,7 +130,7 @@ void connection::on_recv_cmd(command& cmd)
 					{
 						if (e->current_chid == chid)
 						{
-							sapi_join_channel(e->name);
+							e_entity("join", std::move(e));
 						}
 					}
 
@@ -196,7 +210,7 @@ void connection::channel_switch(uint32_t from, uint32_t to)
 	if (channels.count(to))
 	{
 		current = channels[to];
-		sapi_say(fmt::format("已加入频道'{}'", current->name));
+		e_channel("join", std::move(current));
 		for (auto i : current->entities)
 		{
 			if (i->suid != suid)
@@ -284,9 +298,48 @@ bool connection::get_client_mute(uint32_t suid)
 	return false;
 }
 
+int client_connect(std::string host, uint16_t port, connection** conn)
+{
+	std::string key = fmt::format("{}:{}", host, port);
+	if (connections.count(key))
+	{
+		*conn = connections[key];
+		if ((*conn)->status == connection::state::disconnect)
+			return (*conn)->connect(host.c_str(), port);
+		return 0;
+	}
+	*conn = new connection();
+	connections[key] = *conn;
+	return (*conn)->connect(host.c_str(), port);
+
+}
+int client_disconnect(connection* conn)
+{
+	for (auto& i : connections)
+	{
+		if (i.second == conn)
+		{
+			delete conn;
+			connections.erase(i.first);
+			return 0;
+		}
+	}
+	return 1;
+}
+connection* client_get_current_server()
+{
+	if (connections.size())
+		return connections.begin()->second;
+	else
+		return nullptr;
+}
+
+
 int client_init()
 {
+	configs_init();
 	platform_init();
+	std::vector<audio_device> ls;
 	std::string str;
 	if (conf_get_input_device(str))
 	{
@@ -307,6 +360,8 @@ int client_init()
 	conf_get_sapi(str);
 
 	sapi_init();
+
+	tray_init();
 
 	str = sapi_get_profile();
 	return 0;
@@ -392,7 +447,9 @@ void client_check_update()
 int client_uninit()
 {
 	terminated = true;
-	platform_uninit();
+	tray_uninit();
 	sapi_uninit();
+	platform_uninit();
+	configs_uninit();
 	return 0;
 }

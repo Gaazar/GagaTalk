@@ -17,6 +17,11 @@ struct plat_conn
 	std::thread th_heartbeat;
 	sockaddr_in addr_server;
 	bool discard = false;
+
+	~plat_conn()
+	{
+		th_heartbeat.detach();
+	}
 };
 
 connection::connection()
@@ -142,7 +147,8 @@ int connection::connect(const char* host, uint16_t port)//sync
 			while (!terminated && !plat->discard)
 			{
 				std::this_thread::sleep_for(std::chrono::seconds(30));
-				send(plat->sk_cmd, cmd, sizeof(cmd) - 1, 0);
+				if (!terminated && !plat->discard)
+					send(plat->sk_cmd, cmd, sizeof(cmd) - 1, 0);
 			}
 			return 0;
 
@@ -197,6 +203,11 @@ int connection::disconnect()
 }
 connection::~connection()
 {
+	if (mic)
+	{
+		plat_delete_vr(mic);
+		mic = nullptr;
+	}
 	opus_encoder_destroy(aud_enc);
 	disconnect();
 	if (plat)

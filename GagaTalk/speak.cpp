@@ -1,4 +1,4 @@
-#include "client.h"
+#include "events.h"
 #define FMT_HEADER_ONLY
 #include <fmt/core.h>
 #include <assert.h>
@@ -117,26 +117,48 @@ int sapi_init()
 	conf_get_sapi(pf);
 	if (pf.length())
 		sapi_set_profile(pf);
+
+	e_server += [](std::string t, connection* c)
+	{
+		if (!c) return;
+		if (t == "join")
+		{
+			sapi_say(fmt::format("已加入服务器'{}'。", c->host));
+		}
+		else if (t == "auth")
+		{
+
+		}
+		else if (t == "left")
+		{
+			sapi_say(fmt::format("已离开服务器'{}'。", c->host));
+		}
+	};
+	e_channel += [](std::string t, channel* c)
+	{
+		if (!c) return;
+		if (t == "join")
+		{
+			sapi_say(fmt::format("已加入频道'{}'", c->name));
+		}
+	};
+	e_entity += [](std::string t, entity* e)
+	{
+		if (!e) return;
+		if (t == "join")
+		{
+			sapi_say(fmt::format("‘{}’已加入频道。", e->name));
+		}
+		else if (t == "left")
+		{
+			sapi_say(fmt::format("‘{}’已离开频道。", e->name));
+		}
+	};
+
 	return 0;
 }
 int sapi_uninit()
 {
 	delete_speak();
 	return 0;
-}
-int sapi_join_channel(std::string name)
-{
-	return sapi_say(fmt::format("‘{}’已加入频道。", name));
-}
-int sapi_left_channel(std::string name)
-{
-	return sapi_say(fmt::format("‘{}’已离开频道。", name));
-}
-int sapi_join_server(std::string name)
-{
-	return sapi_say(fmt::format("已加入服务器'{}'。", name));
-}
-int sapi_left_server(std::string name)
-{
-	return sapi_say(fmt::format("已离开服务器'{}'。", name));
 }
