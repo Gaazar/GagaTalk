@@ -11,6 +11,7 @@
 *.sln.docstates
 *.sq3
 *.raw
+GagaTalk/test_field/*
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
