@@ -33,6 +33,7 @@ connection::connection()
 int connection::connect(const char* host, uint16_t port)//sync
 {
 	this->host = host;
+	name = host;
 	plat->sk_cmd = socket(AF_INET, SOCK_STREAM, 0);
 	if (!plat->sk_cmd) return -1;
 	plat->sk_voip = socket(AF_INET, SOCK_DGRAM, 0);

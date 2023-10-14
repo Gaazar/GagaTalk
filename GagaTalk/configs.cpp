@@ -514,6 +514,42 @@ int conf_get_global_silent(bool& m)
 	}
 	return 0;
 }
+int conf_set_exit_check(bool dc)
+{
+	char* emsg = nullptr;
+	auto sql = sqlite3_mprintf("SELECT default_flags FROM config WHERE current = 1 limit 1;");
+	_map kv;
+	auto hr = sqlite3_exec(db, sql, &kv, &emsg);
+	sqlite3_free(sql);
+	assert(!hr);
+	uint64_t f = 0b011;
+	if (kv.size())
+	{
+		f = stru64(kv["default_flags"]);
+	}
+	f = (f & (~0b100)) | (dc ? 0b100 : 0b000);
+	sql = sqlite3_mprintf("UPDATE config SET default_flags = %d WHERE current = 1;", f);
+	hr = sqlite3_exec(db, sql, nullptr, nullptr, &emsg);
+	sqlite3_free(sql);
+	assert(!hr);
+	return 1;
+}
+bool conf_get_exit_check()
+{
+	char* emsg = nullptr;
+	auto sql = sqlite3_mprintf("SELECT default_flags FROM config WHERE current = 1 limit 1;");
+	_map kv;
+	auto hr = sqlite3_exec(db, sql, &kv, &emsg);
+	sqlite3_free(sql);
+	assert(!hr);
+	bool m = true;
+	if (kv.size())
+	{
+		m = (stru64(kv["default_flags"]) & 0b100);
+		return m;
+	}
+	return true;
+}
 
 int conf_get_sapi(std::string& s)
 {

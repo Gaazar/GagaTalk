@@ -47,12 +47,12 @@ int db_create_structure(sqlite3* db, char** msg)
 
 	sql =
 		"CREATE TABLE IF NOT EXISTS channel(\
-		chid INT PRIMARY KEY NOT NULL,\
+		chid INT PRIMARY KEY AUTOINCREMENT,\
 		parent INT NOT NULL DEFAULT 0,\
 		owner INT NOT NULL DEFAULT 0,\
 		name TEXT NOT NULL,\
 		icon TEXT DEFAULT NULL,\
-		desc TEXT DEFAULT 'This is default channel of the server.',\
+		desc TEXT DEFAULT 'This is a channel.',\
 		capacity INT NOT NULL DEFAULT 16,\
 		privilege TEXT NOT NULL DEFAULT ''\
 		);";
@@ -71,5 +71,37 @@ int db_create_structure(sqlite3* db, char** msg)
 	}
 	kv.clear();
 
+	return 0;
+}
+int db_get_privilege(uint32_t suid)
+{
+	return 0;
+}
+int db_new_channel()
+{
+	return 0;
+}
+int db_delete_channel()
+{
+	return 0;
+}
+int db_get_channel()
+{
+	return 0;
+}
+int db_set_channel()
+{
+	return 0;
+}
+int db_set_channel_name()
+{
+	return 0;
+}
+int db_set_channel_desc()
+{
+	return 0;
+}
+int db_set_channel_opus()
+{
 	return 0;
 }

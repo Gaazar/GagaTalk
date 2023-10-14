@@ -167,6 +167,8 @@ int conf_get_global_silent(bool& m);
 int conf_get_sapi(std::string& s);
 int conf_set_sapi(std::string s);
 int conf_get_servers(std::vector<server_info>& s);
+int conf_set_exit_check(bool dc);
+bool conf_get_exit_check();
 
 int sapi_say(std::string s);
 int sapi_cancel();

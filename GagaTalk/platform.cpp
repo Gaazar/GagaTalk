@@ -23,7 +23,7 @@
 #pragma comment(lib,"avrt.lib")
 
 #define REFTIMES_PER_SEC  200000//25ms //10000000 = 1s
-#define SAFE_RELEASE(x) x->Release()
+#define SAFE_RELEASE(x) if(x) x->Release();x = nullptr
 #define CHECK_HR
 
 IMMDeviceEnumerator* p_dev_enum;

@@ -25,10 +25,12 @@ class __declspec(uuid("618CA4D0-E67F-436F-B6DE-78994711EE4E")) TrayIcon;
 thread tr_th_msg;
 HINSTANCE tr_hinst = 0;
 HWND tr_hwnd = 0;
-bool exit_confirm = true;
+HICON tr_nic = 0;
+bool exit_confirm = false;
 
 int tray_init()
 {
+	exit_confirm = conf_get_exit_check();
 	tr_th_msg = thread(thread_message);
 	return 0;
 }
@@ -55,14 +57,17 @@ void RegisterWindowClass(PCWSTR pszClassName, PCWSTR pszMenuName, WNDPROC lpfnWn
 
 BOOL AddNotificationIcon(HWND hwnd)
 {
+	if (!tr_nic)
+		tr_nic = (HICON)LoadImage(tr_hinst, MAKEINTRESOURCE(IDI_ICON2), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);;
 	NOTIFYICONDATA nid = { sizeof(nid) };
+	nid.uID = (UINT)hwnd;
 	nid.hWnd = hwnd;
 	// add the icon, setting the icon, tooltip, and callback message.
 	// the icon will be identified with the GUID
 	nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP /*| NIF_GUID*/;
 	//nid.guidItem = __uuidof(TrayIcon);
 	nid.uCallbackMessage = WM_APP_NOTIFYCALLBACK;
-	nid.hIcon = (HICON)LoadImage(tr_hinst, MAKEINTRESOURCE(IDI_ICON2), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
+	nid.hIcon = tr_nic;
 	//LoadString(tr_hinst, IDS_TOOLTIP, nid.szTip, ARRAYSIZE(nid.szTip));
 	wcscpy(nid.szTip, L"GagaTalk\n未连接服务器");
 	Shell_NotifyIcon(NIM_ADD, &nid);
@@ -74,7 +79,14 @@ BOOL AddNotificationIcon(HWND hwnd)
 BOOL ModifyNotificationIcon(HWND hwnd, std::string info)
 {
 	NOTIFYICONDATA nid = { sizeof(nid) };
+	nid.uID = (UINT)hwnd;
 	nid.hWnd = hwnd;
+	// add the icon, setting the icon, tooltip, and callback message.
+	// the icon will be identified with the GUID
+	nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP /*| NIF_GUID*/;
+	//nid.guidItem = __uuidof(TrayIcon);
+	nid.uCallbackMessage = WM_APP_NOTIFYCALLBACK;
+	nid.hIcon = tr_nic;
 	wcscpy(nid.szTip, sutil::s2w(fmt::format("Gagatalk\n{}", info)).c_str());
 	return Shell_NotifyIcon(NIM_MODIFY, &nid);
 }
@@ -188,6 +200,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 		case IDM_EXIT_CONFIRM:
 			exit_confirm = !exit_confirm;
+			conf_set_exit_check(exit_confirm);
 			break;
 		case IDM_EXIT:
 			if (exit_confirm)
@@ -293,10 +306,16 @@ void thread_message()
 
 	tr_hinst = GetModuleHandle(NULL);
 	RegisterWindowClass(L"GagaTalk", NULL, WndProc);
-	HWND hwnd = CreateWindow(L"GagaTalk", L"嘎嘎乱说", WS_OVERLAPPEDWINDOW,
+	HWND hwnd = CreateWindow(L"GagaTalk", L"嘎嘎乱喊", WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, 0, 250, 200, NULL, NULL, tr_hinst, NULL);
 	tr_hwnd = hwnd;
-
+	e_channel += [](std::string t, channel* e)
+	{
+		if (t == "join")
+		{
+			auto b = ModifyNotificationIcon(tr_hwnd, fmt::format("服务器：{}\n频道：{}", e->conn->name, e->name));
+		}
+	};
 
 	MSG msg;
 	while (GetMessage(&msg, nullptr, 0, 0))

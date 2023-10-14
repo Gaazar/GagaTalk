@@ -162,7 +162,7 @@ int connection::recv_cmd_thread()
 	int len = 0;
 	command_buffer cmdb;
 	command cmd;
-	srand((int)this);
+	srand(time(nullptr));
 	while (!discard && !server->terminated)
 	{
 		len = recv(sk_cmd, buffer, sizeof buffer, 0);

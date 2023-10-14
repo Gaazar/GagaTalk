@@ -63,7 +63,7 @@ IDI_ICON2               ICON                    "D:\\Picture\\gagatalks.ico"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,0,11
+ FILEVERSION 0,1,0,13
  PRODUCTVERSION 1,0,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -80,12 +80,12 @@ BEGIN
         BLOCK "080404b0"
         BEGIN
             VALUE "CompanyName", "¸Â¸ÂÂÒÃ»ÔðÈÎ¹«Ë¾"
-            VALUE "FileDescription", "¸Â¸ÂÂÒËµ"
-            VALUE "FileVersion", "0.1.0.11"
+            VALUE "FileDescription", "¸Â¸ÂÂÒº°"
+            VALUE "FileVersion", "0.1.0.13"
             VALUE "InternalName", "GagaTalk.exe"
             VALUE "LegalCopyright", "Copyright (C) 2023 GagaTalk"
             VALUE "OriginalFilename", "GagaTalk.exe"
-            VALUE "ProductName", "¸Â¸ÂÂÒËµ"
+            VALUE "ProductName", "¸Â¸ÂÂÒº°"
             VALUE "ProductVersion", "1.0.0.0"
         END
     END
