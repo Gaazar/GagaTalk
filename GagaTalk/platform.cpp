@@ -148,7 +148,7 @@ struct voice_recorder
 			{
 				BYTE* pcm = nullptr;
 				auto hr = aud_cli->Start();
-				while (!terminated && !discarded)
+				while (!discard && !discarded)
 				{
 					UINT packsz;
 					UINT numFramesAvailable;
@@ -364,6 +364,10 @@ bool plat_set_input_device(std::string devid)
 	}
 	return false;
 }
+std::string plat_get_input_device()
+{
+	return p_indev_id;
+}
 bool plat_set_output_device(std::string devid)
 {
 	IMMDevice* d = nullptr;
@@ -385,6 +389,11 @@ bool plat_set_output_device(std::string devid)
 		return true;
 	}
 	return false;
+
+}
+std::string plat_get_output_device() 
+{
+	return p_outdev_id;
 
 }
 HRESULT CreateAudioClient(IMMDevice* pDevice, IAudioClient** ppAudioClient)
@@ -566,6 +575,10 @@ int voice_playback::create_devices(std::string device_id)
 						printf("AUDCLNT_E_OUT_OF_ORDER at voice_playback\n");
 						aud_out->ReleaseBuffer(0, 0);
 						continue;
+					}
+					else if (hr != S_OK)
+					{
+						printf("UNKNOWN_ERROR:%d at voice_playback\n", hr);
 					}
 					int min_smp = min(f.nSamples, frames);
 					for (int i = 0; i < min_smp; i++)

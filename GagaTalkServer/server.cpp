@@ -26,7 +26,7 @@ bool cmpsaddr(sockaddr_in* a, sockaddr_in* b)
 	return a->sin_addr.s_addr == b->sin_addr.s_addr && a->sin_port == b->sin_port;
 #endif
 }
-
+bool terminated = false;
 int instance::start(const char* dbn)
 {
 	last_clean = time(nullptr);
@@ -108,7 +108,7 @@ int instance::start(const char* dbn)
 }
 int instance::listen_thread()
 {
-	while (!terminated)
+	while (!discard && !terminated)
 	{
 		SOCKET sk_conn = 0;
 		sockaddr_in caddr;
@@ -155,7 +155,7 @@ int instance::listen_thread()
 int instance::voip_recv_thread()
 {
 	char buffer[1536];
-	while (!terminated)
+	while (!discard)
 	{
 		sockaddr_in from;
 		socklen_t salen = sizeof(struct sockaddr);
@@ -216,38 +216,6 @@ int instance::voip_recv_thread()
 	return 0;
 }
 
-r instance::db_check_user(uint32_t& suid, std::string& token, std::string& msg)
-{
-	std::string sql = fmt::format("SELECT token,state FROM users WHERE suid = {} LIMIT 1;", suid);
-	_map kv;
-	auto hr = sqlite3_exec(db, sql.c_str(), &kv, db_msg);
-	assert(!hr);
-	if (kv.size() && token.length())
-	{
-		if ("normal" != kv["state"])
-		{
-			msg = kv["state"];
-			return r::e_state;
-		}
-		if (token == kv["token"])
-		{
-			return r::ok;
-		}
-		msg = "invalid token";
-		return r::e_auth;
-	}
-	else
-	{
-		if (kv.size())
-			suid = randu32();
-		token = token_gen();
-		sql = fmt::format("INSERT INTO users (name,suid,token) VALUES ('NewUser',{},'{}');", suid, token);
-		hr = sqlite3_exec(db, sql.c_str(), nullptr, nullptr, db_msg);
-		msg = "new user";
-		assert(!hr);
-		return r::new_user;
-	}
-}
 
 void instance::broadcast(const char* buf, int sz, connection* ignore)
 {
@@ -285,7 +253,10 @@ void instance::verified_connection(connection* c)
 		}
 	}
 }
+void instance::on_man_cmd(command& cmd)
+{
 
+}
 uint64_t randu64()
 {
 	uint64_t v = 0;

@@ -5,6 +5,7 @@
 #include <map>
 #include <assert.h>
 #include "sql.h"
+#include "server.h"
 
 int db_create_structure(sqlite3* db, char** msg)
 {
@@ -73,35 +74,55 @@ int db_create_structure(sqlite3* db, char** msg)
 
 	return 0;
 }
-int db_get_privilege(uint32_t suid)
+
+r instance::db_check_user(uint32_t& suid, std::string& token, std::string& msg)
+{
+	std::string sql = fmt::format("SELECT token,state FROM users WHERE suid = {} LIMIT 1;", suid);
+	_map kv;
+	auto hr = sqlite3_exec(db, sql.c_str(), &kv, db_msg);
+	assert(!hr);
+	if (kv.size() && token.length())
+	{
+		if ("normal" != kv["state"])
+		{
+			msg = kv["state"];
+			return r::e_state;
+		}
+		if (token == kv["token"])
+		{
+			return r::ok;
+		}
+		msg = "invalid token";
+		return r::e_auth;
+	}
+	else
+	{
+		if (kv.size())
+			suid = randu32();
+		token = token_gen();
+		sql = fmt::format("INSERT INTO users (name,suid,token) VALUES ('NewUser',{},'{}');", suid, token);
+		hr = sqlite3_exec(db, sql.c_str(), nullptr, nullptr, db_msg);
+		msg = "new user";
+		assert(!hr);
+		return r::new_user;
+	}
+}
+int instance::db_get_privilege(suid_t suid)
+{
+	auto sql = sqlite3_mprintf("SELETE * from users WHERE suid = %d LIMIT 1;", suid);
+	char* msg;
+	_map kv;
+	auto r = sqlite3_exec(db, sql, &kv, &msg);
+	assert(!r);
+	if (kv.count("privilege"))
+		return stru64(kv["privilege"]);
+	return 0;
+}
+int instance::db_create_channel(ChannelDesc& cd)
 {
 	return 0;
 }
-int db_new_channel()
-{
-	return 0;
-}
-int db_delete_channel()
-{
-	return 0;
-}
-int db_get_channel()
-{
-	return 0;
-}
-int db_set_channel()
-{
-	return 0;
-}
-int db_set_channel_name()
-{
-	return 0;
-}
-int db_set_channel_desc()
-{
-	return 0;
-}
-int db_set_channel_opus()
+int instance::db_delete_channel(chid_t id)
 {
 	return 0;
 }

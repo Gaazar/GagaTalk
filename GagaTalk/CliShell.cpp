@@ -73,7 +73,7 @@ void shell_conf()
 	conf_get_filter(filter);
 	j = configor::json::parse(filter);
 	enable_voice_loopback();
-	while (!terminated)
+	while (!discard)
 	{
 		ch = getchar();
 		if (cb.append(&ch, 1))
@@ -234,7 +234,7 @@ void shell_sapi()
 	path.push_back("sapi");
 	print_usage_sapi();
 	print_head();
-	while (!terminated)
+	while (!discard)
 	{
 		ch = getchar();
 		if (cb.append(&ch, 1))
@@ -318,7 +318,7 @@ int shell_main()
 	print_head();
 	command cmd;
 	bool vlb_ = false;
-	while (!terminated)
+	while (!discard)
 	{
 		ch = getchar();
 		if (cb.append(&ch, 1))
@@ -371,6 +371,10 @@ int shell_main()
 				else
 					printf("failed\n");
 
+			}
+			else if (cmd[0] == "vio")
+			{
+				printf(" ‰»Î£∫%s\n ‰≥ˆ£∫%s\n", plat_get_input_device().c_str(), plat_get_output_device().c_str());
 			}
 			else if (cmd[0] == "mm")
 			{

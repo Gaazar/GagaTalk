@@ -7,7 +7,7 @@
 #include <opus/opus.h>
 #include <functional>
 
-#define BUILD_SEQ 12 
+#define BUILD_SEQ 13 
 struct connection;
 struct audio_device
 {
@@ -74,6 +74,7 @@ struct connection :ServerDesc
 	uint32_t cert = 0;
 	recorder_ref* mic = nullptr;
 	OpusEncoder* aud_enc;
+	uint32_t ping_pong = 0;
 	enum class state
 	{
 		disconnect = 0,
@@ -122,7 +123,9 @@ void plat_delete_vpb(voice_playback*);
 recorder_ref* plat_create_vr();
 void plat_delete_vr(recorder_ref*);
 bool plat_set_input_device(std::string devid);
+std::string plat_get_input_device();
 bool plat_set_output_device(std::string devid);
+std::string plat_get_output_device();
 bool plat_set_filter(std::string filter);
 float plat_set_global_volume(float db);
 bool plat_set_global_mute(bool m);

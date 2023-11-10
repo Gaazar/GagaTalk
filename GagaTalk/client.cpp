@@ -446,7 +446,7 @@ void client_check_update()
 
 int client_uninit()
 {
-	terminated = true;
+	discard = true;
 	tray_uninit();
 	sapi_uninit();
 	platform_uninit();

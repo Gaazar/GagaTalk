@@ -17,6 +17,8 @@ class __declspec(uuid("618CA4D0-E67F-436F-B6DE-78994711EE4E")) TrayIcon;
 #define IDM_SERVER 0x8000
 #define IDM_CHANNEL 0x10000
 #define IDM_CLIENT 0x20000
+#define IDM_AUDIN 0x40000
+#define IDM_AUDOUT 0x80000
 #define IDM_EXIT 0x300
 #define IDM_EXIT_CONFIRM 0x301
 #define IDM_MUTE 0x302
@@ -26,6 +28,9 @@ thread tr_th_msg;
 HINSTANCE tr_hinst = 0;
 HWND tr_hwnd = 0;
 HICON tr_nic = 0;
+std::vector<audio_device> tr_ai;
+std::vector<audio_device> tr_ao;
+
 bool exit_confirm = false;
 
 int tray_init()
@@ -102,6 +107,7 @@ BOOL DeleteNotificationIcon()
 HMENU trm_svr = 0;
 HMENU trm_chan = 0;
 HMENU trm_conf = 0;
+HMENU trm_auddev = 0;
 std::vector<server_info> tr_svrs;
 connection* tr_conn = nullptr;
 HMENU MakeMenu()
@@ -109,11 +115,13 @@ HMENU MakeMenu()
 	if (trm_svr) DestroyMenu(trm_svr);
 	if (trm_chan) DestroyMenu(trm_chan);
 	if (trm_conf) DestroyMenu(trm_conf);
+	if (trm_auddev) DestroyMenu(trm_auddev);
 
 	HMENU hMenu = CreatePopupMenu();
 	trm_svr = CreatePopupMenu();
 	trm_chan = CreatePopupMenu();
 	trm_conf = CreatePopupMenu();
+	trm_auddev = CreatePopupMenu();
 
 	tr_conn = client_get_current_server();
 	conf_get_servers(tr_svrs);
@@ -144,7 +152,7 @@ HMENU MakeMenu()
 	}
 	else  AppendMenu(trm_chan, MF_STRING | MF_DISABLED, 0, TEXT("无"));
 
-	AppendMenu(trm_conf, MF_STRING | MF_DISABLED, 0, TEXT("无"));
+	//AppendMenu(trm_conf, MF_STRING | MF_DISABLED, 0, TEXT("无"));
 
 	if (tr_conn && tr_conn->current)
 	{
@@ -159,6 +167,21 @@ HMENU MakeMenu()
 			n++;
 		}
 	}
+	plat_enum_input_device(tr_ai);
+	AppendMenu(trm_auddev, MF_STRING | MF_DISABLED, 0, TEXT("输入"));
+	for (int i = 0; i < tr_ai.size(); i++)
+	{
+		AppendMenu(trm_auddev, MF_STRING | ((plat_get_input_device() == tr_ai[i].id) ? MF_CHECKED : MF_UNCHECKED), IDM_AUDIN | i, sutil::s2w(tr_ai[i].name).c_str());
+	}
+	AppendMenu(trm_auddev, MF_SEPARATOR, 0, NULL);
+	AppendMenu(trm_auddev, MF_STRING | MF_DISABLED, 0, TEXT("输出"));
+	plat_enum_output_device(tr_ao);
+	for (int i = 0; i < tr_ao.size(); i++)
+	{
+		AppendMenu(trm_auddev, MF_STRING | ((plat_get_output_device() == tr_ao[i].id) ? MF_CHECKED : MF_UNCHECKED), IDM_AUDOUT | i, sutil::s2w(tr_ao[i].name).c_str());
+	}
+	AppendMenu(trm_conf, MF_POPUP, (UINT_PTR)trm_auddev, TEXT("输入输出"));
+
 
 	AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
 	AppendMenu(hMenu, MF_POPUP, (UINT_PTR)trm_conf, TEXT("设置"));
@@ -263,6 +286,28 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 				}
 				break;
+			}
+			else if (wmId & IDM_AUDIN)
+			{
+				int n = ~IDM_AUDIN & wmId;
+				bool s = plat_set_input_device(tr_ai[n].id);
+				conf_set_input_device(&tr_ai[n].id);
+				printf("输入设备切换为：%s\n", tr_ai[n].name.c_str());
+				if (s)
+					printf("成功\n");
+				else
+					printf("失败\n");
+			}
+			else if (wmId & IDM_AUDOUT)
+			{
+				int n = ~IDM_AUDOUT & wmId;
+				bool s = plat_set_output_device(tr_ao[n].id);
+				conf_set_output_device(&tr_ao[n].id);
+				printf("输出设备切换为：%s\n", tr_ao[n].name.c_str());
+				if (s)
+					printf("成功\n");
+				else
+					printf("失败\n");
 			}
 			else
 				return DefWindowProc(hwnd, message, wParam, lParam);

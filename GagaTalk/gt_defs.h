@@ -21,8 +21,11 @@
  * ms <chid> <message> : c->s send message
  * mr <chid> <suid> <name> <message> : s->c received message
  */
-
- //struct string
+typedef uint32_t suid_t;
+typedef uint32_t chid_t;
+typedef uint32_t usid_t;
+typedef uint32_t svid_t;
+//struct string
  //{
  //	const char* data;
  //	string(const char* s)
@@ -136,6 +139,7 @@ class command
 	std::vector<std::string> tokens;
 	std::vector<std::string*> args;
 	std::map<std::string, std::vector<std::string*>> opts;
+	std::string empty;
 	void parse()
 	{
 		bool bOpt = false;
@@ -195,7 +199,6 @@ public:
 	}
 	std::string& at(uint32_t index)//at0 at1 at2 at3 -x xxx -vv vvvv
 	{
-		std::string empty;
 		if (index > args.size()) return empty;
 		return *args[index];
 
@@ -235,6 +238,24 @@ public:
 		tokens.clear();
 		args.clear();
 		opts.clear();
+	}
+	void remove_head()
+	{
+		if (args.size())
+			args.erase(args.begin());
+	}
+
+	operator const std::string& () const
+	{
+		if (args.size())
+			return *args[0];
+		return empty;
+	}
+	bool operator== (std::string&& s)
+	{
+		if (args.size())
+			return *args[0] == s;
+		return false;
 	}
 };
 class command_buffer
@@ -371,4 +392,4 @@ inline uint64_t stru64(std::string s)
 	return std::strtoull(s.c_str(), nullptr, 10);
 }
 
-extern bool terminated;
+extern bool discard;

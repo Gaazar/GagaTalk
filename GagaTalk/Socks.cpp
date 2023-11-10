@@ -96,7 +96,7 @@ int connection::connect(const char* host, uint16_t port)//sync
 			CoInitialize(NULL);
 			//int tv_out = 10000;
 			//auto hr = setsockopt(plat->sk_cmd, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv_out, sizeof(tv_out));
-			while (!terminated && !plat->discard)
+			while (!discard && !plat->discard)
 			{
 				int len = recv(plat->sk_cmd, buffer, sizeof buffer, 0);
 				if (len > 0)
@@ -108,7 +108,10 @@ int connection::connect(const char* host, uint16_t port)//sync
 						{
 							int c = cb.parse(cmd);
 							if (cmd.n_args())
+							{
+								if (cmd[0] == "pong") ping_pong--;
 								on_recv_cmd(cmd);
+							}
 							cmd.clear();
 						}
 					}
@@ -130,7 +133,7 @@ int connection::connect(const char* host, uint16_t port)//sync
 	plat->th_voip = std::thread([this]()
 		{
 			char buffer[1536];
-			while (!terminated && !plat->discard)
+			while (!discard && !plat->discard)
 			{
 				sockaddr_in from;
 				memset(&from, 0, sizeof from);
@@ -145,11 +148,18 @@ int connection::connect(const char* host, uint16_t port)//sync
 	plat->th_heartbeat = std::thread([this]()
 		{
 			char cmd[] = "ping\n";
-			while (!terminated && !plat->discard)
+			while (!discard && !plat->discard)
 			{
 				std::this_thread::sleep_for(std::chrono::seconds(30));
-				if (!terminated && !plat->discard)
+				if (!discard && !plat->discard)
+				{
 					send(plat->sk_cmd, cmd, sizeof(cmd) - 1, 0);
+					ping_pong++;
+					if (ping_pong > 5)
+					{
+						printf("好像断连接了\n");
+					}
+				}
 			}
 			return 0;
 

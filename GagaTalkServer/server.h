@@ -19,6 +19,7 @@ typedef int SOCKET;
 typedef SOCKADDR_IN sockaddr_in;
 #endif
 struct instance;
+extern bool terminated;
 enum class r
 {
 	ok = 0,
@@ -67,7 +68,7 @@ struct instance
 	std::thread  th_voip;
 	sqlite3* db;
 	char** db_msg = nullptr;
-	bool terminated = false;
+	bool discard = false;
 	uint64_t last_clean = 0;
 
 	int start(const char* db = "database.db3");
@@ -76,8 +77,12 @@ struct instance
 	void broadcast(const char* buf, int sz, connection* ignore = nullptr);
 	void send_voip(sockaddr_in* sa, const char* buf, int sz);
 	void verified_connection(connection* c);
+	void on_man_cmd(command& cmd);
 
 	r db_check_user(uint32_t& suid, std::string& token, std::string& msg);
+	int db_get_privilege(suid_t suid);
+	int db_create_channel(ChannelDesc& cd);
+	int db_delete_channel(chid_t id);
 
 };
 

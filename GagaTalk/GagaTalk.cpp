@@ -10,7 +10,7 @@
 
 #pragma comment(lib,"opus.lib")
 #pragma comment(lib,"avrt.lib")
-bool terminated = false;
+bool discard = false;
 int shell_main();
 int main()
 {
