@@ -99,6 +99,7 @@ BOOL DeleteNotificationIcon()
 {
 	NOTIFYICONDATA nid = { sizeof(nid) };
 	nid.hWnd = tr_hwnd;
+	nid.uID = (UINT)tr_hwnd;
 	//nid.uFlags = NIF_GUID;
 	//nid.guidItem = __uuidof(TrayIcon);
 	return Shell_NotifyIcon(NIM_DELETE, &nid);
