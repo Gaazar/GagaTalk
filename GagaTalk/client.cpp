@@ -46,11 +46,21 @@ void connection::on_recv_cmd(command& cmd)
 	}
 	else
 	{
-		if (cmd[0] != "pong")
+		if (cmd[0] != "pong" && cmd[0] != "dp")
 			printf("[%s]\n", cmd.str().c_str());
 		if (cmd[0] == "cd")
 		{
 			uint32_t chid = stru64(cmd[1]);
+			if (cmd.has_option("-r"))
+			{
+				if (channels.count(chid))
+				{
+					channel* d = channels[chid];
+					channels.erase(chid);
+					delete d;
+				}
+				return;
+			}
 			if (!channels.count(chid))
 			{
 				channels[chid] = new channel();
@@ -60,7 +70,7 @@ void connection::on_recv_cmd(command& cmd)
 			d->conn = this;
 			if (cmd.has_option("-n"))
 				d->name = cmd["-n"];
-			if (cmd.has_option("-d"))
+			if (cmd.n_opt_val("-d"))
 				d->description = cmd["-d"];
 			if (cmd.has_option("-p"))
 				d->parent = stru64(cmd["-p"]);
@@ -161,17 +171,47 @@ void connection::on_recv_cmd(command& cmd)
 			state = stru64(cmd[3]);
 			if (state == 1)
 			{
+				if (mic)
+					plat_delete_vr(mic);
 				mic = plat_create_vr();
 				mic->callback = [=](AudioFrame* f)
-				{
-					on_mic_pack(f);
-				};
+					{
+						on_mic_pack(f);
+					};
 			}
 			else
 			{
 				if (mic)
 					plat_delete_vr(mic);
 				mic = nullptr;
+			}
+		}
+		else if (cmd[0] == "dp")
+		{
+			for (int i = 1; i < cmd.n_args(); i++)
+			{
+				printf("%s\n", cmd[i].c_str());
+			}
+		}
+		else if (cmd[0] == "sc")
+		{
+			suid_t u = stru64(cmd[1]);
+			if (u == suid)
+			{
+				if (cmd.n_opt_val("-mute"))
+				{
+					int s = stru64(cmd.option("-mute"));
+					entity_state.man_mute = (s & 1);
+					entity_state.mute |= (s >> 1);
+					client_set_global_mute(entity_state.is_mute(), false);
+				}
+				if (cmd.n_opt_val("-silent"))
+				{
+					int s = stru64(cmd.option("-silent"));
+					entity_state.man_silent = (s & 1);
+					entity_state.silent |= (s >> 1);
+					client_set_global_silent(entity_state.is_silent(), false);
+				}
 			}
 		}
 	}
@@ -233,6 +273,7 @@ void channel::erase(entity* e)
 	}
 	if (op && chid == conn->current->chid)
 	{
+		e_entity("left", std::move(e));
 		e->remove_playback();
 	}
 }
@@ -250,7 +291,8 @@ void channel::erase(uint32_t suid)
 	}
 	if (e && chid == conn->current->chid)
 	{
-		sapi_say(fmt::format("'{}'已离开频道", e->name));
+		e_entity("left", std::move(e));
+		//sapi_say(fmt::format("'{}'已离开频道", e->name));
 		e->remove_playback();
 	}
 
@@ -271,6 +313,15 @@ void channel::join(entity* e, bool is_new)
 		e->create_playback();
 	}
 }
+channel::~channel()
+{
+	for (auto i : entities)
+	{
+		erase(i);
+	}
+	conn = nullptr;
+}
+
 void connection::set_client_volume(uint32_t suid, float vol, bool save)
 {
 	if (save)
@@ -443,7 +494,32 @@ void client_check_update()
 		});
 	c_dp.join_task(&t);
 }
-
+void client_set_global_mute(bool m, bool broadcast)
+{
+	auto server = client_get_current_server();
+	plat_set_global_mute(m);
+	conf_set_global_mute(m);
+	e_entity("mute", std::move(server->entities[server->suid]));
+	if (server && broadcast)
+	{
+		server->entity_state.mute = m;
+		auto cmd = fmt::format("sc -mute {}\n", (int)m);
+		server->send_command(cmd);
+	}
+}
+void client_set_global_silent(bool s, bool broadcast)
+{
+	auto server = client_get_current_server();
+	plat_set_global_silent(s);
+	conf_set_global_silent(s);
+	e_entity("silent", std::move(server->entities[server->suid]));
+	if (server && broadcast)
+	{
+		server->entity_state.silent = s;
+		auto cmd = fmt::format("sc -silent {}\n", (int)s);
+		server->send_command(cmd);
+	}
+}
 int client_uninit()
 {
 	discard = true;

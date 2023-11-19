@@ -45,7 +45,11 @@ void connection::on_recv_cmd(command& cmd)
 {
 	if (!server) return;
 	std::string sql = "";
-	if (cmd[0] != "ping")
+	if (cmd[0] == "ping")
+	{
+		send_cmd("pong\n");
+	}
+	else
 		printf("[C:%d][%s]\n", sk_cmd, cmd.str().c_str());
 	if (cmd[0] == "hs")
 	{
@@ -93,28 +97,62 @@ void connection::on_recv_cmd(command& cmd)
 			}
 			cert_code = randu32();
 			server->verified_connection(this);
-			join_channel(1);
-			send_channel_info();
-			auto bcmd = fmt::format("rd {} -n {} -c {}\n", suid, esc_quote(name), current_chid);
-			server->broadcast(bcmd.c_str(), bcmd.length(), this);
-			send_clients_info();
-			bcmd = fmt::format("s {} {} {}\n", current_chid, server->channels[current_chid]->session_id, cert_code);
-			send_cmd(bcmd);
+			server->db_get_role_server(this);
+			send_channel_list();//cd
+			send_clients_list();//rd
+			{
+				std::lock_guard<std::mutex> g(server->m_conn);
+				join_channel(1);
+
+			}//auto bcmd = fmt::format("rd {} -n {} -c {}\n", suid, esc_quote(name), current_chid);
+			//server->broadcast(bcmd.c_str(), bcmd.length(), this);
+			//bcmd = fmt::format("s {} {} {}\n", current_chid, server->channels[current_chid]->session_id, cert_code);
+			//send_cmd(bcmd);
 		}
 	}
-	else if (cmd[0] == "j")
+	if (cert_code == 0) return;
+	if (cmd[0] == "j")
 	{
 		if (cmd.n_args() < 2)
 			return;
 		auto chid = stru64(cmd[1]);
+		std::lock_guard<std::mutex> g(server->m_conn);
 		if (!server->channels.count(chid))
 			return;
 		cert_code = randu32();
 		join_channel(chid);
-		auto bcmd = fmt::format("rd {} -c {}\n", suid, chid);
-		server->broadcast(bcmd.c_str(), bcmd.length());
-		bcmd = fmt::format("s {} {} {}\n", current_chid, server->channels[current_chid]->session_id, cert_code);
-		send_cmd(bcmd);
+		//auto bcmd = fmt::format("rd {} -c {}\n", suid, chid);
+		//server->broadcast(bcmd.c_str(), bcmd.length());
+		//bcmd = fmt::format("s {} {} {}\n", current_chid, server->channels[current_chid]->session_id, cert_code);
+		//send_cmd(bcmd);
+	}
+	else if (cmd[0] == "man")
+	{
+		cmd.remove_head();
+		server->on_man_cmd(cmd, this);
+	}
+	else if (cmd[0] == "sc")
+	{
+		std::stringstream ss;
+		int narg = 0;
+		ss << "sc " << suid;
+		if (cmd.n_opt_val("-mute"))
+		{
+			narg++;
+			state.mute = stru64(cmd.option("-mute"));
+			state.cg_mute(ss);
+		}
+		if (cmd.n_opt_val("-silent"))
+		{
+			narg++;
+			state.silent = stru64(cmd.option("-silent"));
+			state.cg_silent(ss);
+		}
+		if (narg)
+		{
+			ss << "\n";
+			server->channels[current_chid]->broadcast_cmd(ss.str(), this);
+		}
 	}
 }
 int connection::send_cmd(std::string s)
@@ -125,25 +163,27 @@ int connection::send_buffer(const char* buf, int sz)
 {
 	return send(sk_cmd, buf, sz, 0);
 }
-void connection::send_channel_info()
+void connection::send_channel_list()
 {
 	std::stringstream ss;
 	for (auto& kv : server->channels)
 	{
 		auto i = kv.second;
-		ss << fmt::format("cd {} -n {} -d {} -p {}\n",
-			i->chid, esc_quote(i->name), esc_quote(i->description), i->parent);
+		//ss << fmt::format("cd {} -n {} -d {} -p {}\n",
+		//	i->chid, esc_quote(i->name), esc_quote(i->description), i->parent);
+		i->cgl_listinfo(ss);
 	}
 	send_cmd(ss.str());
 }
-void connection::send_clients_info()
+void connection::send_clients_list()
 {
 	std::stringstream ss;
 	for (auto& kv : server->connections)
 	{
 		auto i = kv.second;
-		ss << fmt::format("rd {} -n {} -c {}\n",
-			i->suid, esc_quote(i->name), i->current_chid);
+		if (i->suid != suid)
+			ss << fmt::format("rd {} -n {} -c {}\n",
+				i->suid, esc_quote(i->name), i->current_chid);
 	}
 	send_cmd(ss.str());
 }
@@ -198,25 +238,87 @@ int connection::recv_cmd_thread()
 }
 void connection::join_channel(uint32_t chid)
 {
+	std::string cmd;
+	chid_t befor = 0;
 	if (current_chid != chid)
 	{
 		if (server->channels.count(current_chid))
 		{
+			befor = current_chid;
 			auto cn = server->channels[current_chid];
 			for (auto i = cn->clients.begin(); i != cn->clients.end(); i++)
 			{
 				if ((*i)->suid == this->suid)
 				{
 					cn->clients.erase(i);
+					cmd = fmt::format("v {} {} 0\n", current_chid, cn->session_id);
+					send_cmd(cmd);
 					break;
 				}
 			}
 		}
+		if (chid == 0)
+		{
+			current_chid = 0;
+			return;
+		}
 		if (server->channels.count(chid))
 		{
-			auto cn = server->channels[chid];
-			cn->clients.push_back(this);
 			current_chid = chid;
+			auto cn = server->channels[chid];
+			if (cn->blocked)
+			{
+				return;
+			}
+			server->db_get_role_channel(this);
+			cn->clients.push_back(this);
+			std::stringstream ss;
+			if (befor)
+			{
+				ss << fmt::format("rd {} -c {}\n", suid, chid);
+				server->broadcast(ss.str());
+				
+			}
+			else
+			{
+				//new client
+				ss << fmt::format("rd {} -n {} -c {}\n", suid, esc_quote(name), chid);
+				server->broadcast(ss.str());
+			}
+			ss.str("");
+			ss.clear();
+			ss << "sc " << suid;
+			cg_state(ss) << "\n";
+			cn->broadcast_cmd(ss.str());
+			send_cmd(fmt::format("\ns {} {} {}\n", chid, cn->session_id, cert_code));
+			send_clients_info();
 		}
 	}
+}
+//void connection::send_channel_info()
+//{
+//
+//}
+void connection::send_clients_info()
+{
+	std::stringstream ss;
+	auto& ch = server->channels[current_chid];
+	for (auto i : ch->clients)
+	{
+		if (i->suid != suid)
+		{
+			ss << fmt::format("sc {}",
+				i->suid);
+			i->cg_state(ss) << "\n";
+		}
+	}
+	send_cmd(ss.str());
+
+}
+std::stringstream& connection::cg_state(std::stringstream& ss)
+{
+	ss << fmt::format(" -mute {} -silent {}",
+		((int)state.man_mute) | (((int)state.mute) << 1),
+		((int)state.man_silent) | (((int)state.silent) << 1));
+	return ss;
 }

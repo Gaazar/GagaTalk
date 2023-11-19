@@ -397,7 +397,7 @@ namespace native
 						cbt.file = tasks[w.task_id].file;
 						cbt.data = nullptr;
 					}
-					else
+					else if (mem_data.size())
 						cbt.data = &mem_data[0];
 					tasks[w.task_id].status = task_status::empty;
 				}

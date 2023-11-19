@@ -185,7 +185,12 @@ int connection::send_command(const char* buf, int sz)
 	return send(plat->sk_cmd, buf, sz, 0);
 
 }
-int connection::send_voip_pack(const char* buf, int sz)
+int connection::send_command(std::string c)
+{
+	if (!plat->sk_cmd) return false;
+	return send(plat->sk_cmd, c.c_str(), c.length(), 0);
+
+}int connection::send_voip_pack(const char* buf, int sz)
 {
 	if (!plat->sk_voip) return false;
 	return sendto(plat->sk_voip, buf, sz, 0, (sockaddr*)&plat->addr_server, sizeof plat->addr_server);

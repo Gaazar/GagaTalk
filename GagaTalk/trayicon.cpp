@@ -190,8 +190,12 @@ HMENU MakeMenu()
 	AppendMenu(hMenu, MF_POPUP, (UINT_PTR)trm_svr, TEXT("服务器"));
 	AppendMenu(hMenu, MF_POPUP, (UINT_PTR)trm_chan, TEXT("频道"));
 	AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
-	AppendMenu(hMenu, MF_STRING | (plat_get_global_mute() ? MF_CHECKED : MF_UNCHECKED), IDM_MUTE, TEXT("闭麦\tCtrl+Alt+M"));
-	AppendMenu(hMenu, MF_STRING | (plat_get_global_silent() ? MF_CHECKED : MF_UNCHECKED), IDM_SILENT, TEXT("静音\tCtrl+Alt+S"));
+	AppendMenu(hMenu, MF_STRING
+		| (plat_get_global_mute() ? MF_CHECKED : MF_UNCHECKED)
+		| (tr_conn ? (tr_conn->entity_state.man_mute ? MF_DISABLED : 0) : 0), IDM_MUTE, TEXT("闭麦\tCtrl+Alt+M"));
+	AppendMenu(hMenu, MF_STRING
+		| (plat_get_global_silent() ? MF_CHECKED : MF_UNCHECKED)
+		| (tr_conn ? (tr_conn->entity_state.man_silent ? MF_DISABLED : 0) : 0), IDM_SILENT, TEXT("静音\tCtrl+Alt+S"));
 	AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
 	AppendMenu(hMenu, MF_STRING | (exit_confirm ? MF_CHECKED : MF_UNCHECKED), IDM_EXIT_CONFIRM, TEXT("确认退出"));
 	AppendMenu(hMenu, MF_STRING, IDM_EXIT, TEXT("退出"));
@@ -238,15 +242,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDM_MUTE:
 		{
 			bool m = !plat_get_global_mute();
-			plat_set_global_mute(m);
-			conf_set_global_mute(m);
+			client_set_global_mute(m);
 		}
 		break;
 		case IDM_SILENT:
 		{
 			bool s = !plat_get_global_silent();
-			plat_set_global_silent(s);
-			conf_set_global_silent(s);
+			client_set_global_silent(s);
 		}
 		break;
 		default:
@@ -356,12 +358,12 @@ void thread_message()
 		CW_USEDEFAULT, 0, 250, 200, NULL, NULL, tr_hinst, NULL);
 	tr_hwnd = hwnd;
 	e_channel += [](std::string t, channel* e)
-	{
-		if (t == "join")
 		{
-			auto b = ModifyNotificationIcon(tr_hwnd, fmt::format("服务器：{}\n频道：{}", e->conn->name, e->name));
-		}
-	};
+			if (t == "join")
+			{
+				auto b = ModifyNotificationIcon(tr_hwnd, fmt::format("服务器：{}\n频道：{}", e->conn->name, e->name));
+			}
+		};
 
 	MSG msg;
 	while (GetMessage(&msg, nullptr, 0, 0))

@@ -5,6 +5,7 @@
 #include <thread>
 #include "sql.h"
 #include <map>
+#include <unordered_set>
 
 #ifdef _MSC_VER
 #include<winsock2.h>
@@ -20,6 +21,12 @@ typedef SOCKADDR_IN sockaddr_in;
 #endif
 struct instance;
 extern bool terminated;
+//typedef std::unordered_set<std::string> pm_set;
+struct pm_set
+{
+	std::unordered_set<std::string> permissions;
+	int level = 0;
+};
 enum class r
 {
 	ok = 0,
@@ -31,21 +38,26 @@ struct connection : RemoteClientDesc
 {
 	SOCKET sk_cmd;
 	SOCKADDR_IN addr;
-	uint32_t cert_code;
+	uint32_t cert_code = 0;
 	std::thread  th_cmd;
 	instance* server;
+	std::string role_server;
+	std::string role_channel;
 	int activated = 0;
 	bool discard = false;
-
+	client_state state;
 	connection();
 	void on_recv_cmd(command& cmd);
 	int send_cmd(std::string s);
 	int send_buffer(const char* buf, int sz);
 	int recv_cmd_thread();
 	void release();
-	void send_channel_info();
+	void send_channel_list();
+	void send_clients_list();
+	//void send_channel_info();
 	void send_clients_info();
 	void join_channel(uint32_t chid);
+	std::stringstream& cg_state(std::stringstream& ss);//cg = command generation, arguments
 };
 struct channel : ChannelDesc
 {
@@ -53,15 +65,23 @@ struct channel : ChannelDesc
 	uint32_t session_id;
 	std::vector<connection*> clients;
 	instance* inst = nullptr;
+	bool blocked = false;
 	void broadcast_voip_pak(const char* buf, int sz, uint32_t ignore_suid);
+	void broadcast_cmd(std::string cmd, connection* ignore = nullptr);
+
+	std::stringstream& cgl_listinfo(std::stringstream& ss);//command line generation, generates a full command, not a part;
 
 };
 struct instance
 {
 	std::mutex m_conn;
-	std::map<uint32_t, channel*> channels;
-	std::map<uint32_t, connection*> connections;
+	std::mutex m_man;
+	std::mutex m_channel;
+	std::map<chid_t, channel*> channels;
+	std::map<suid_t, connection*> connections;
 	std::vector<connection*> conn_verifing;
+	std::map<std::string, pm_set> server_roles;
+	std::map<std::string, pm_set> channel_roles;
 	SOCKET sk_lsn;
 	SOCKET sk_voip;
 	std::thread  th_listen;
@@ -75,17 +95,46 @@ struct instance
 	int listen_thread();
 	int voip_recv_thread();
 	void broadcast(const char* buf, int sz, connection* ignore = nullptr);
+	void broadcast(std::string cmd, connection* ignore = nullptr);
 	void send_voip(sockaddr_in* sa, const char* buf, int sz);
 	void verified_connection(connection* c);
-	void on_man_cmd(command& cmd);
+	void on_man_cmd(command& cmd, connection* conn);
+
+	void cl_move(suid_t suid, chid_t chid); //cl = client
+	void ch_delete(chid_t chid, chid_t cl_move_to = 1); //ch = channel
 
 	r db_check_user(uint32_t& suid, std::string& token, std::string& msg);
-	int db_get_privilege(suid_t suid);
-	int db_create_channel(ChannelDesc& cd);
-	int db_delete_channel(chid_t id);
+	int db_get_channel(channel* c);
+	int db_get_roles();
+	int db_get_role_server(connection* c);
+	int db_get_role_channel(connection* c);
+	int db_get_role_channel(suid_t suid, chid_t chid, std::string& role);
+	int db_gen_role_key(suid_t suid, std::string s_role, std::string c_role, chid_t chid, std::string& code);
+	int db_gen_role_key_tag(suid_t suid, std::string s_tag, std::string c_tag, chid_t chid, std::string& code);
+	int db_grant(suid_t op, suid_t u, chid_t* cid, char* to_s, char* to_c);
+	bool db_user_exist(suid_t suid);
+	int db_delete_channel(chid_t chid);
+	int db_get_channels(chid_t parent, std::vector<chid_t>& members);
+	int db_allocate_chid();
+	int db_create_channel(chid_t c, chid_t p, std::string name, std::string desc, chid_t owner);
+
+	void mp_grk(command& cmd, connection* conn); //mp = manage process
+	void mp_grant(command& cmd, connection* conn);
+	void mp_new_channel(command& cmd, connection* conn);
+	void mp_mod_channel(command& cmd, connection* conn);
+	void mp_del_channel(command& cmd, connection* conn);
+	void mp_sql(command& cmd, connection* conn);
+	void mp_mute(command& cmd, connection* conn);
+	void mp_silent(command& cmd, connection* conn);
+
+	static void man_help(connection* conn);
+	static void man_display(std::string s, connection* conn);
+};
+struct role_permission
+{
+	std::unordered_set<std::string> permissions;
 
 };
-
 int socket_init();
 uint64_t randu64();
 uint32_t randu32();

@@ -144,6 +144,7 @@
     <ClInclude Include="..\GagaTalk\gt_defs.h" />
     <ClInclude Include="..\GagaTalk\sql.h" />
     <ClInclude Include="db.h" />
+    <ClInclude Include="permissions.h" />
     <ClInclude Include="server.h" />
   </ItemGroup>
   <ItemGroup>
@@ -153,9 +154,11 @@
     <ClCompile Include="server.cpp" />
     <ClCompile Include="Socks.cpp" />
     <ClCompile Include="sv_conn.cpp" />
+    <ClCompile Include="sv_man.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Makefile" />
+    <Text Include="Permission.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

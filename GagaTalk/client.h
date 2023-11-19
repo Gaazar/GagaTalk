@@ -7,7 +7,7 @@
 #include <opus/opus.h>
 #include <functional>
 
-#define BUILD_SEQ 13 
+#define BUILD_SEQ 14 
 struct connection;
 struct audio_device
 {
@@ -55,6 +55,7 @@ struct channel : ChannelDesc
 	void erase(entity* e);
 	void erase(uint32_t suid);
 	void join(entity* e, bool is_new = false);
+	~channel();
 };
 struct voice_recorder;
 struct recorder_ref
@@ -75,6 +76,7 @@ struct connection :ServerDesc
 	recorder_ref* mic = nullptr;
 	OpusEncoder* aud_enc;
 	uint32_t ping_pong = 0;
+	client_state entity_state;
 	enum class state
 	{
 		disconnect = 0,
@@ -89,6 +91,7 @@ struct connection :ServerDesc
 	connection();
 	int connect(const char* host, uint16_t port);//sync
 	int send_command(const char* buf, int sz);
+	int send_command(std::string s);
 	int send_voip_pack(const char* buf, int sz);
 	int disconnect();
 	~connection();
@@ -135,6 +138,8 @@ bool plat_get_global_mute();
 bool plat_get_global_silent();
 bool plat_enum_input_device(std::vector<audio_device>& ls);
 bool plat_enum_output_device(std::vector<audio_device>& ls);
+void client_set_global_mute(bool m,bool broadcast = true);
+void client_set_global_silent(bool m, bool broadcast = true);
 void sapi_set_volume(int v);
 void sapi_set_rate(int r);
 int sapi_init();

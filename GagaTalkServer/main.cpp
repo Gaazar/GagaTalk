@@ -36,7 +36,7 @@ int main(int argc, char** argv)
 			if (cmd == "q")
 				terminated = true;
 			else
-				s.on_man_cmd(cmd);
+				s.on_man_cmd(cmd, nullptr);
 
 		}
 	}

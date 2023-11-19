@@ -286,6 +286,36 @@ void shell_sapi()
 		}
 	}
 }
+void shell_man()
+{
+	command_buffer cb;
+	command cmd;
+	char ch;
+	path.push_back("man");
+	print_head();
+	while (!discard)
+	{
+		ch = getchar();
+		if (cb.append(&ch, 1))
+		{
+			cmd.clear();
+			print_head();
+			if (!cb.parse(cmd)) continue;
+			if (cmd[0] == "q")
+			{
+				path.pop_back();
+				printf("\n");
+				return;
+			}
+			else
+			{
+				auto c = client_get_current_server();
+				auto s = "man " + cmd.str() + "\n";
+				c->send_command(s.c_str(), s.length());
+			}
+		}
+	}
+}
 int shell_main()
 {
 	srand(time(nullptr));
@@ -379,15 +409,13 @@ int shell_main()
 			else if (cmd[0] == "mm")
 			{
 				bool m = !plat_get_global_mute();
-				plat_set_global_mute(m);
-				conf_set_global_mute(m);
+				client_set_global_mute(m);
 				printf("%s\n", m ? "mute" : "not mute");
 			}
 			else if (cmd[0] == "ss")
 			{
 				bool s = !plat_get_global_silent();
-				plat_set_global_silent(s);
-				conf_set_global_silent(s);
+				client_set_global_silent(s);
 				printf("%s\n", s ? "silent" : "not silent");
 			}
 			else if (cmd[0] == "vm")
@@ -499,7 +527,18 @@ int shell_main()
 							i.second->current_chid, i.second->playback, i.second->n_pak);
 					}
 				}
-
+				else if (cmd[0] == "man")
+				{
+					if (cmd.n_args() == 1)
+					{
+						shell_man();
+					}
+					else
+					{
+						auto s = cmd.str() + "\n";
+						c->send_command(s.c_str(), s.length());
+					}
+				}
 			}
 			print_head();
 		}

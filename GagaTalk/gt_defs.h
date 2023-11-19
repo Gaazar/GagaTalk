@@ -83,55 +83,84 @@ struct ServerDesc
 	std::string name;
 	uint32_t n_group;
 };
+struct client_state
+{
+	bool man_mute = false;
+	bool man_silent = false;
+	bool mute = false;
+	bool silent = false;
+
+	std::stringstream& cg_mute(std::stringstream& ss)
+	{
+		ss << " -mute " << (((int)man_mute) | (((int)mute) << 1));
+		return ss;
+	}
+	std::stringstream& cg_silent(std::stringstream& ss)
+	{
+		ss << " -silent " << (((int)man_silent) | (((int)silent) << 1));
+		return ss;
+	}
+
+	bool is_mute()
+	{
+		return man_mute || mute;
+	}
+	bool is_silent()
+	{
+		return man_silent || silent;
+	}
+};
 
 static std::string escape(std::string in)
 {
-	std::string out;
+	std::stringstream out;
 	int slen = in.length();
 	int n = 0;
 	for (int i = 0; i < slen; i++)
 	{
-		switch (in[n])
+		switch (in[i])
 		{
 		case ' ':
 		case '\t':
 		case '\n':
 		case '\'':
 		case '\"':
-			out += '\\';
+		case '-':
+			out << '\\';
 			n++;
 			break;
 
 		default:
 			break;
 		}
-		out += in[i];
+		out << in[i];
 		n++;
 	}
-	return out;
+	return out.str();
 }
 static std::string esc_quote(std::string in)
 {
-	std::string out = "\'";
+	std::stringstream out; out << "\'";
 	int slen = in.length();
 	int n = 0;
 	for (int i = 0; i < slen; i++)
 	{
-		switch (in[n])
+		switch (in[i])
 		{
 		case '\'':
 		case '\"':
-			out += '\\';
+			out << '\\';
 			n++;
 			break;
 
 		default:
 			break;
 		}
-		out += in[i];
+		out << in[i];
 		n++;
 	}
-	return out + '\'';
+	out << '\'';
+	return out.str();
 }
 class command
 {
@@ -226,11 +255,15 @@ public:
 	{
 		return args.size();
 	}
+	int n_opts()
+	{
+		return opts.size();
+	}
 	std::string str()
 	{
 		std::string s = "";
 		for (auto& i : tokens)
-			s += i + " ";
+			s += escape(i) + " ";
 		return s;
 	}
 	void clear()
@@ -359,6 +392,11 @@ public:
 				{
 					if (s[i] == '\n')
 						n_cmd--;
+					if (c)
+					{
+						ss.write(&s[i + 1], s.size() - i - 1);
+						return c;
+					}
 					continue;
 				}
 				sstr.str("");
