@@ -24,6 +24,8 @@ int main(int argc, char** argv)
 	while (!terminated)
 	{
 		ch = getchar();
+		if (ch == -1)
+			break;
 		if (cb.append(&ch, 1))
 		{
 

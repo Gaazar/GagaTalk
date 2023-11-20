@@ -228,7 +228,7 @@ int conf_get_server(server_info* s) //fill hostname and others will be filled.
 	}
 	else
 	{
-#ifndef _DEBUG
+#ifdef _DEBUG
 		srand(time(nullptr));
 		s->suid = std::to_string(randu32());// kv["suid"];
 #else

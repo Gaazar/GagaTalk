@@ -17,7 +17,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 typedef int SOCKET;
-typedef SOCKADDR_IN sockaddr_in;
+typedef sockaddr_in SOCKADDR_IN;
 #endif
 struct instance;
 extern bool terminated;
@@ -134,6 +134,11 @@ struct role_permission
 {
 	std::unordered_set<std::string> permissions;
 
+};
+struct voice_session
+{
+	std::map<chid_t, channel*> channels;
+	unsigned short port;
 };
 int socket_init();
 uint64_t randu64();

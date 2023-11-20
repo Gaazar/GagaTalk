@@ -131,7 +131,7 @@ HMENU MakeMenu()
 		int n = 0;
 		for (auto& i : tr_svrs)
 		{
-			if (tr_conn && tr_conn->host == i.hostname)
+			if (tr_conn && tr_conn->host == i.hostname && tr_conn->status != connection::state::disconnect)
 				AppendMenu(trm_svr, MF_STRING | MF_CHECKED, IDM_SERVER | n, sutil::s2w(i.name).c_str());
 			else
 				AppendMenu(trm_svr, MF_STRING, IDM_SERVER | n, sutil::s2w(i.name).c_str());
@@ -155,7 +155,7 @@ HMENU MakeMenu()
 
 	//AppendMenu(trm_conf, MF_STRING | MF_DISABLED, 0, TEXT("ÎÞ"));
 
-	if (tr_conn && tr_conn->current)
+	if ( tr_conn && tr_conn->status == connection::state::established  && tr_conn->current)
 	{
 		int n = 0;
 		AppendMenu(hMenu, MF_STRING, 0, sutil::s2w(fmt::format("ÆµµÀ: {}", tr_conn->current->name)).c_str());
@@ -265,10 +265,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				{
 					client_disconnect(c);
 				}
-				else
-				{
-					client_connect(tr_svrs[n].hostname, 7970, &c);
-				}
+				client_connect(tr_svrs[n].hostname, 7970, &c);
 				break;
 			}
 			else if (wmId & IDM_CHANNEL)

@@ -14,14 +14,8 @@ struct plat_conn
 	SOCKET sk_voip;
 	std::thread th_cmd;
 	std::thread th_voip;
-	std::thread th_heartbeat;
 	sockaddr_in addr_server;
 	bool discard = false;
-
-	~plat_conn()
-	{
-		th_heartbeat.detach();
-	}
 };
 
 connection::connection()
@@ -32,6 +26,7 @@ connection::connection()
 }
 int connection::connect(const char* host, uint16_t port)//sync
 {
+	plat->discard = false;
 	this->host = host;
 	name = host;
 	plat->sk_cmd = socket(AF_INET, SOCK_STREAM, 0);
@@ -83,6 +78,7 @@ int connection::connect(const char* host, uint16_t port)//sync
 		plat->sk_cmd = 0;
 		closesocket(plat->sk_voip);
 		plat->sk_voip = 0;
+		status = state::disconnect;
 		return -3;
 	}
 	se = handshake();
@@ -145,27 +141,17 @@ int connection::connect(const char* host, uint16_t port)//sync
 			return 0;
 
 		});
-	plat->th_heartbeat = std::thread([this]()
-		{
-			char cmd[] = "ping\n";
-			while (!discard && !plat->discard)
-			{
-				std::this_thread::sleep_for(std::chrono::seconds(30));
-				if (!discard && !plat->discard)
-				{
-					send(plat->sk_cmd, cmd, sizeof(cmd) - 1, 0);
-					ping_pong++;
-					if (ping_pong > 5)
-					{
-						printf("好像断连接了\n");
-					}
-				}
-			}
-			return 0;
-
-		});
-
 	return se;
+}
+void connection::tick()
+{
+	const char cmd[] = "ping\n";
+	send(plat->sk_cmd, cmd, sizeof(cmd) - 1, 0);
+	ping_pong++;
+	if (ping_pong > 5)
+	{
+		printf("好像断连接了\n");
+	}
 }
 int connection::handshake()
 {
@@ -199,6 +185,7 @@ int connection::send_command(std::string c)
 int connection::disconnect()
 {
 	if (!plat) return -1;
+	if (plat->discard) return -1;
 	plat->discard = true;
 	status = state::disconnect;
 	if (plat->sk_cmd)
@@ -214,7 +201,10 @@ int connection::disconnect()
 	if (plat->th_voip.get_id() != std::thread::id())
 		plat->th_voip.detach();
 	if (plat->th_cmd.get_id() != std::thread::id())
-		plat->th_cmd.detach();
+		plat->th_cmd.join();
+	//if (plat->th_heartbeat.get_id() != std::thread::id())
+	//	plat->th_heartbeat.detach();
+	clean_up();
 	return 0;
 }
 connection::~connection()
@@ -228,6 +218,7 @@ connection::~connection()
 	disconnect();
 	if (plat)
 		delete plat;
+	plat = nullptr;
 }
 
 bool wsa = false;

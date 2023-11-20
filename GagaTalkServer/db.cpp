@@ -18,17 +18,17 @@ int db_create_structure(sqlite3* db, char** msg)
 		version INT NOT NULL,\
 		app_ver INT NOT NULL\
 		);";
-	int r = sqlite3_exec(db, sql.c_str(), nullptr, 0, msg);
+	int r = sqlite3_exec(db, sql.c_str(), nullptr, 0, &err_msg);
 	assert(!r);
 	_map kv;
 	sql = "SELECT * FROM meta WHERE id = 0;";
-	r = sqlite3_exec(db, sql.c_str(), &kv, msg);
+	r = sqlite3_exec(db, sql.c_str(), &kv, &err_msg);
 	assert(!r);
 	if (kv.size() == 0)
 	{
 		//sql = "UPDATE meta SET version = 1, app_ver = 1 where id = 0;";
-		sql = "INSERT INTO meta (id,version,app_ver) VALUES (0,1,1);";
-		r = sqlite3_exec(db, sql.c_str(), nullptr, 0, msg);
+		sql = "INSERT INTO meta (id,version,app_ver) VALUES (0,0,1);";
+		r = sqlite3_exec(db, sql.c_str(), nullptr, 0, &err_msg);
 		assert(!r);
 	}
 	else
@@ -45,13 +45,13 @@ int db_create_structure(sqlite3* db, char** msg)
 		state TEXT NOT NULL DEFAULT 'normal',\
 		privilege INT NOT NULL DEFAULT 0\
 		);";
-	r = sqlite3_exec(db, sql.c_str(), nullptr, 0, msg);
+	r = sqlite3_exec(db, sql.c_str(), nullptr, 0, &err_msg);
 
 	assert(!r);
 
 	sql =
 		"CREATE TABLE IF NOT EXISTS channel(\
-		chid INT PRIMARY KEY AUTOINCREMENT,\
+		chid INTEGER PRIMARY KEY AUTOINCREMENT,\
 		parent INT NOT NULL DEFAULT 0,\
 		owner INT NOT NULL DEFAULT 0,\
 		name TEXT NOT NULL,\
@@ -60,17 +60,17 @@ int db_create_structure(sqlite3* db, char** msg)
 		capacity INT NOT NULL DEFAULT 16,\
 		privilege TEXT NOT NULL DEFAULT ''\
 		);";
-	r = sqlite3_exec(db, sql.c_str(), nullptr, 0, msg);
+	r = sqlite3_exec(db, sql.c_str(), nullptr, 0, &err_msg);
 	assert(!r);
 
 	sql = "SELECT COUNT(*) FROM channel;";
-	r = sqlite3_exec(db, sql.c_str(), &kv, msg);
+	r = sqlite3_exec(db, sql.c_str(), &kv, &err_msg);
 	assert(!r);
 	if (kv["COUNT(*)"] == "0")
 	{
 		//sql = "UPDATE meta SET version = 1, app_ver = 1 where id = 0;";
 		sql = "INSERT INTO channel (chid,name) VALUES (1,'Default Channel');";
-		r = sqlite3_exec(db, sql.c_str(), nullptr, 0, msg);
+		r = sqlite3_exec(db, sql.c_str(), nullptr, 0, &err_msg);
 		assert(!r);
 	}
 	kv.clear();

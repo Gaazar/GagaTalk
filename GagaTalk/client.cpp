@@ -16,6 +16,7 @@ std::map<std::string, connection*> connections;
 delegate<void(std::string type, connection* conn)> e_server;
 delegate<void(std::string type, channel* channel)> e_channel;
 delegate<void(std::string type, entity* entity)> e_entity;
+std::thread c_th_heartbeat;
 
 void connection::on_recv_cmd(command& cmd)
 {
@@ -95,10 +96,6 @@ void connection::on_recv_cmd(command& cmd)
 				entities.erase(suid);
 				auto c = e->current_chid;
 				channels[c]->erase(e);
-				if (e->current_chid == chid)
-				{
-					e_entity("left", std::move(e));
-				}
 				delete e;
 			}
 			else
@@ -216,7 +213,23 @@ void connection::on_recv_cmd(command& cmd)
 		}
 	}
 }
-
+int connection::clean_up()
+{
+	for (auto& i : channels)
+	{
+		delete i.second;
+		i.second = nullptr;
+	}
+	channels.clear();
+	for (auto& i : entities)
+	{
+		delete i.second;
+		i.second = nullptr;
+	}
+	entities.clear();
+	e_server("left", this);
+	return 0;
+}
 void connection::on_mic_pack(AudioFrame* f)
 {
 	unsigned char buf[1480];
@@ -271,7 +284,7 @@ void channel::erase(entity* e)
 			break;
 		}
 	}
-	if (op && chid == conn->current->chid)
+	if (op && chid == conn->current->chid && conn->status == connection::state::established)
 	{
 		e_entity("left", std::move(e));
 		e->remove_playback();
@@ -289,7 +302,7 @@ void channel::erase(uint32_t suid)
 			break;
 		}
 	}
-	if (e && chid == conn->current->chid)
+	if (e && chid == conn->current->chid && conn->status == connection::state::established)
 	{
 		e_entity("left", std::move(e));
 		//sapi_say(fmt::format("'{}'ÒÑÀë¿ªÆµµÀ", e->name));
@@ -385,7 +398,18 @@ connection* client_get_current_server()
 		return nullptr;
 }
 
-
+void heartbeat_thread()
+{
+	while (!discard)
+	{
+		std::this_thread::sleep_for(std::chrono::seconds(30));
+		auto c = client_get_current_server();
+		if (c && c->status == connection::state::established)
+		{
+			c->tick();
+		}
+	}
+}
 int client_init()
 {
 	configs_init();
@@ -415,6 +439,10 @@ int client_init()
 	tray_init();
 
 	str = sapi_get_profile();
+	if (!c_th_heartbeat.joinable())
+	{
+		c_th_heartbeat = std::thread(heartbeat_thread);
+	}
 	return 0;
 }
 
@@ -426,6 +454,10 @@ void entity::load_profile()
 	set_volume(v);
 	conf_get_uc_mute(conn->host, suid, b);
 	set_mute(b);
+}
+entity::~entity()
+{
+	remove_playback();
 }
 using namespace native;
 download_pool c_dp;
@@ -527,5 +559,6 @@ int client_uninit()
 	sapi_uninit();
 	platform_uninit();
 	configs_uninit();
+	c_th_heartbeat.detach();
 	return 0;
 }

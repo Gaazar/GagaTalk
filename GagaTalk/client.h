@@ -7,7 +7,7 @@
 #include <opus/opus.h>
 #include <functional>
 
-#define BUILD_SEQ 14 
+#define BUILD_SEQ 15 
 struct connection;
 struct audio_device
 {
@@ -47,6 +47,7 @@ struct entity : RemoteClientDesc
 	void create_playback();
 	voice_playback* move_playback();
 	void load_profile();
+	~entity();
 };
 struct channel : ChannelDesc
 {
@@ -94,6 +95,7 @@ struct connection :ServerDesc
 	int send_command(std::string s);
 	int send_voip_pack(const char* buf, int sz);
 	int disconnect();
+	int clean_up();
 	~connection();
 
 	void on_recv_cmd(command& cmd);
@@ -110,6 +112,7 @@ struct connection :ServerDesc
 	float get_client_volume(uint32_t suid);
 	void set_client_mute(uint32_t suid, bool mute, bool save = true);
 	bool get_client_mute(uint32_t suid);
+	void tick();
 
 };
 int client_init();

@@ -6,7 +6,8 @@
 #endif
 #ifdef __GNUC__
 #define INVALID_SOCKET -1
-#define closesocket(sk) shutdown(sk, SHUT_RDWR);close(sk)
+//#define closesocket(sk) shutdown(sk, SHUT_RDWR);close(sk)
+#define closesocket(sk) close(sk)
 #endif
 connection::connection()
 {
@@ -22,7 +23,7 @@ void connection::release()
 		server->broadcast(c.c_str(), c.length(), this);
 		join_channel(0);
 		server->connections.erase(suid);
-		server->conn_verifing.push_back(this);
+		//server->conn_verifing.push_back(this);
 	}
 	suid = 0;
 	uuid = 0;
@@ -30,7 +31,7 @@ void connection::release()
 		closesocket(sk_cmd);
 	sk_cmd = 0;
 	activated = 0;
-	cert_code = randu64();
+	cert_code = 0;
 #ifdef _MSC_VER
 	addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
 #endif
@@ -157,10 +158,12 @@ void connection::on_recv_cmd(command& cmd)
 }
 int connection::send_cmd(std::string s)
 {
+	if (discard) return 0;
 	return send(sk_cmd, s.c_str(), s.length(), 0);
 }
 int connection::send_buffer(const char* buf, int sz)
 {
+	if (discard) return 0;
 	return send(sk_cmd, buf, sz, 0);
 }
 void connection::send_channel_list()
