@@ -86,9 +86,9 @@ void connection::on_recv_cmd(command& cmd)
 		}
 		std::string res;
 		if (r == r::new_user)
-			res = fmt::format("ch {} {} -t {} -m {}\n", suid, s, token, escape(msg));
+			res = fmt::format("ch {} {} -t {} -m {} -v {}\n", suid, s, token, escape(msg), VERSION_SEQ);
 		else
-			res = fmt::format("ch {} {} -m {}\n", suid, s, escape(msg));
+			res = fmt::format("ch {} {} -m {} -v {}\n", suid, s, escape(msg), VERSION_SEQ);
 		send_cmd(res);
 		if (r == r::new_user || r == r::ok)
 		{
@@ -280,7 +280,7 @@ void connection::join_channel(uint32_t chid)
 			{
 				ss << fmt::format("rd {} -c {}\n", suid, chid);
 				server->broadcast(ss.str());
-				
+
 			}
 			else
 			{

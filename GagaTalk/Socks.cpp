@@ -161,7 +161,7 @@ int connection::handshake()
 	conf_get_server(&si);
 	conf_get_username(uname);
 	suid = std::strtoull(si.suid.c_str(), nullptr, 10);
-	auto cmd = fmt::format("hs {} {} {}\n", suid, uname, si.token);
+	auto cmd = fmt::format("hs {} {} {} -v {}\n", suid, uname, si.token, BUILD_SEQ);
 	send_command(cmd.c_str(), cmd.length());
 	return 0;
 }
