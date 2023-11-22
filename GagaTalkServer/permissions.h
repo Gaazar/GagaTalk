@@ -27,6 +27,7 @@ modify.channel.description\n\
 modify.channel.icon\n\
 modify.channel.info\n\
 modify.channel.role\n\
+modify.channel.parent\n\
 modify.server.name\n\
 modify.server.description\n\
 modify.server.icon\n\

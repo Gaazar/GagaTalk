@@ -35,6 +35,14 @@ enum class r
 	e_auth,
 	e_state,
 };
+struct statistics
+{
+	uint64_t time_enter = 0;
+	uint64_t vo_tx = 0, vo_rx = 0; //tx = client's sent receive by server; rx = server sent to client
+	uint64_t cm_tx = 0, cm_rx = 0;
+	uint32_t last_ssid = 0;
+	uint16_t cmd_port = 0;
+};
 struct connection : RemoteClientDesc
 {
 	SOCKET sk_cmd;
@@ -47,6 +55,7 @@ struct connection : RemoteClientDesc
 	int activated = 0;
 	bool discard = false;
 	client_state state;
+	statistics stts;
 	connection();
 	void on_recv_cmd(command& cmd);
 	int send_cmd(std::string s);
@@ -62,6 +71,9 @@ struct connection : RemoteClientDesc
 	bool permission(std::string name);
 	bool permission(std::string name, chid_t chid);
 	bool permission(std::string name, chid_t chid, chid_t chid2);//true when both of chid permite
+
+	std::stringstream& debug_output(std::stringstream& ss);
+	char* debug_address(char* buf, int len);
 };
 struct channel : ChannelDesc
 {
@@ -70,7 +82,7 @@ struct channel : ChannelDesc
 	std::vector<connection*> clients;
 	instance* inst = nullptr;
 	bool blocked = false;
-	void broadcast_voip_pak(const char* buf, int sz, uint32_t ignore_suid);
+	void broadcast_voip_pak(const char* buf, int sz, suid_t sender);
 	void broadcast_cmd(std::string cmd, connection* ignore = nullptr);
 
 	std::stringstream& cgl_listinfo(std::stringstream& ss);//command line generation, generates a full command, not a part;
@@ -131,6 +143,7 @@ struct instance
 	void mp_mute(command& cmd, connection* conn);
 	void mp_silent(command& cmd, connection* conn);
 	void mp_move(command& cmd, connection* conn);
+	void mp_debug(command& cmd, connection* conn);
 
 	static void man_help(connection* conn);
 	static void man_display(std::string s, connection* conn);

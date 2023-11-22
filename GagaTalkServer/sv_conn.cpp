@@ -325,3 +325,24 @@ std::stringstream& connection::cg_state(std::stringstream& ss)
 		((int)state.man_silent) | (((int)state.silent) << 1));
 	return ss;
 }
+
+std::stringstream& connection::debug_output(std::stringstream& ss)
+{
+	char ipaddr[128] = { 0 };
+	debug_address(ipaddr, sizeof ipaddr);
+	ss <<
+		"DEBUG INFO:\n" <<
+		"address:\t" << ipaddr << "\n" <<
+		"port:\t" << stts.cmd_port << "\n" <<
+		"suid:\t" << suid << "\n" <<
+		"name:\t" << name << "\n" <<
+		"channel:\t" << current_chid << "\n" <<
+		"channel ssid:\t" << server->channels[current_chid]->session_id << "\n" <<
+		"cert:\t" << cert_code << "\n" <<
+		"voice:\n" <<
+		"\tport:\t" << addr.sin_port << "\n" <<
+		"\ttx:" << stts.vo_tx << "\trx:" << stts.vo_rx << "\n" <<
+		"\tlast ssid:\t" << stts.last_ssid << "\n"
+		;
+	return ss;
+}

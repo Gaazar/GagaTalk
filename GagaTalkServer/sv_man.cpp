@@ -555,3 +555,25 @@ void instance::mp_move(command& cmd, connection* conn)
 	ss << "Done.\n";
 	man_display(ss.str(), conn);
 }
+void instance::mp_debug(command& cmd, connection* conn)
+{
+	std::stringstream ss;
+	suid_t u = 0;
+	if (cmd.n_args() > 1)
+	{
+		u = stru64(cmd[1]);
+	}
+	connection* c = conn;
+	if (connections.count(u))
+	{
+		c = connections[u];
+	}
+	if (c)
+	{
+		c->debug_output(ss) << "\n";
+		if (conn)
+			printf(ss.str().c_str());
+	}
+	man_display(ss.str(), conn);
+
+}

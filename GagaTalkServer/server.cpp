@@ -140,6 +140,7 @@ int instance::listen_thread()
 			}
 			connection* conn = new connection();
 			conn->sk_cmd = sk_conn;
+			conn->stts.cmd_port = caddr.sin_port;
 			// conn->addr = caddr;
 			memset(&conn->addr, 0, sizeof conn->addr);
 			conn->server = this;
@@ -167,6 +168,7 @@ int instance::voip_recv_thread()
 		{
 			uint32_t ssid = *(uint32_t*)buffer;
 			uint32_t suid = 0;
+			connection* conn = nullptr;
 			for (auto& cli : connections)
 			{
 				if (cmpsaddr(&from, &cli.second->addr))
@@ -175,6 +177,7 @@ int instance::voip_recv_thread()
 					//     return 0;
 					if (!cli.second->state.man_mute)
 						suid = cli.second->suid;
+					conn = cli.second;
 					break;
 				}
 			}
@@ -182,10 +185,11 @@ int instance::voip_recv_thread()
 			{
 				for (auto& cn : channels)
 				{
-
+					conn->stts.last_ssid = ssid;
 					if (cn.second->session_id == ssid)
 					{
 						*(uint32_t*)buffer = suid;
+						conn->stts.vo_tx += len;
 						cn.second->broadcast_voip_pak(buffer, len, suid);
 						break;
 					}
@@ -237,12 +241,15 @@ void instance::send_voip(sockaddr_in* sa, const char* buf, int sz)
 {
 	auto r = sendto(sk_voip, buf, sz, 0, (sockaddr*)sa, sizeof(*sa));
 }
-void channel::broadcast_voip_pak(const char* buf, int sz, uint32_t ignore_suid)
+void channel::broadcast_voip_pak(const char* buf, int sz, suid_t sender)
 {
 	for (auto& i : clients)
 	{
-		if (i->suid == ignore_suid || i->state.man_silent)
+		if (i->suid == sender || i->state.man_silent)
+		{
 			continue;
+		}
+		i->stts.vo_rx += sz;
 		inst->send_voip(&i->addr, buf, sz);
 	}
 }
@@ -315,6 +322,7 @@ void instance::on_man_cmd(command& cmd, connection* conn)
 	else if (cmd[0] == "sql") mp_sql(cmd, conn);
 	else if (cmd[0] == "mute") mp_mute(cmd, conn);
 	else if (cmd[0] == "move") mp_move(cmd, conn);
+	else if (cmd[0] == "debug") mp_debug(cmd, conn);
 }
 void instance::cl_move(suid_t suid, chid_t chid)
 {
@@ -336,6 +344,10 @@ void instance::ch_delete(chid_t chid, chid_t to)
 	}
 }
 
+char* connection::debug_address(char* buf, int len)
+{
+	return (char*)inet_ntop(AF_INET, &(addr.sin_addr), buf, len);
+}
 uint64_t randu64()
 {
 	uint64_t v = 0;
@@ -365,3 +377,4 @@ std::string token_gen()
 	}
 	return ss.str();
 }
+
