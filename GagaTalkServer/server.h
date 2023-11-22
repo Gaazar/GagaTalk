@@ -59,6 +59,8 @@ struct connection : RemoteClientDesc
 	void send_clients_info();
 	void join_channel(uint32_t chid);
 	std::stringstream& cg_state(std::stringstream& ss);//cg = command generation, arguments
+	bool permission(std::string name);
+	bool permission(std::string name, chid_t chid);
 };
 struct channel : ChannelDesc
 {
@@ -118,7 +120,7 @@ struct instance
 	int db_get_channels(chid_t parent, std::vector<chid_t>& members);
 	int db_allocate_chid();
 	int db_create_channel(chid_t c, chid_t p, std::string name, std::string desc, chid_t owner);
-
+	int db_update_channel(chid_t c, const char* name, const char* desc);
 	void mp_grk(command& cmd, connection* conn); //mp = manage process
 	void mp_grant(command& cmd, connection* conn);
 	void mp_new_channel(command& cmd, connection* conn);

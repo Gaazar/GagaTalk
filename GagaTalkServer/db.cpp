@@ -567,3 +567,32 @@ int instance::db_create_channel(chid_t c, chid_t p, std::string name, std::strin
 	}
 	return r;
 }
+int instance::db_update_channel(chid_t c, const char* name, const char* desc)
+{
+	char* msg;
+	auto sql = sqlite3_mprintf("\
+UPDATE channel \
+SET name = IFNULL(\
+	%Q,\
+	(\
+		SELECT name \
+		FROM channel \
+		WHERE chid = %u\
+		)\
+),\
+desc = IFNULL(\
+	%Q,\
+	(\
+		SELECT desc \
+		FROM channel \
+		WHERE chid = %u\
+		)\
+) \
+WHERE chid = %u;",
+name, c, desc, c, c);
+	auto r = sqlite3_exec(db, sql, nullptr, nullptr, &msg);
+	sqlite3_free(sql);
+	assert(!r);
+	return r;
+
+}

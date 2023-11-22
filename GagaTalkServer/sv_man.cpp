@@ -3,6 +3,27 @@
 #define FMT_HEADER_ONLY
 #include <fmt/core.h>
 
+bool connection::permission(std::string name)
+{
+	if (server->server_roles[role_server].permissions.count(name))
+		return true;
+	if (server->channel_roles[role_channel].permissions.count(name))
+		return true;
+	return false;
+}
+bool connection::permission(std::string name, chid_t chid)
+{
+	if (server->server_roles[role_server].permissions.count(name))
+		return true;
+	if (!server->channels.count(chid)) return false;
+	std::string role;
+	server->db_get_role_channel(suid, chid, role);
+	if (server->channel_roles[role].permissions.count(name))
+		return true;
+	return false;
+
+}
+
 void instance::mp_grk(command& cmd, connection* conn)
 {
 	std::string tk;
@@ -166,6 +187,8 @@ void instance::mp_grant(command& cmd, connection* conn)
 				connections[u]->role_channel = to_c;;
 			}
 		}
+		ss << "Done.\n";
+		man_display(ss.str(), conn);
 	}
 	else
 	{
@@ -225,10 +248,51 @@ void instance::mp_new_channel(command& cmd, connection* conn)
 	std::stringstream css;
 	c->cgl_listinfo(css);
 	broadcast(css.str());
-
+	ss << "Done.\n";
+	man_display(ss.str(), conn);
 }
 void instance::mp_mod_channel(command& cmd, connection* conn)
 {
+	std::stringstream ss;
+	//delc <chid> -sure -confirmed -delete_it: delete channel.
+	if (cmd.n_args() < 2)
+	{
+		ss << "arguement mismatch.\n";
+		man_display(ss.str(), conn);
+		return;
+	}
+	chid_t ch = stru64(cmd[1]);
+	if (!channels.count(ch))
+	{
+		ss << "unknown channel id :" << ch << "\n";
+		man_display(ss.str(), conn);
+		return;
+	}
+	const char* name = nullptr;
+	const char* desc = nullptr;
+	if (cmd.n_opt_val("-n"))
+	{
+		if (conn && !conn->permission("modify.channel.name", ch))
+		{
+			ss << "permission denied. modify.channel.name\n";
+			man_display(ss.str(), conn);
+			return;
+		}
+		name = cmd.option("-n").c_str();
+	}
+	if (cmd.n_opt_val("-d"))
+	{
+		if (conn && !conn->permission("modify.channel.description", ch))
+		{
+			ss << "permission denied. modify.channel.description\n";
+			man_display(ss.str(), conn);
+			return;
+		}
+		desc = cmd.option("-d").c_str();
+	}
+	db_update_channel(ch, name, desc);
+	ss << "Done.\n";
+	man_display(ss.str(), conn);
 
 }
 void instance::mp_del_channel(command& cmd, connection* conn)
@@ -280,6 +344,8 @@ void instance::mp_del_channel(command& cmd, connection* conn)
 	{
 		db_delete_channel(i);
 	}
+	ss << "Done.\n";
+	man_display(ss.str(), conn);
 
 }
 void instance::mp_sql(command& cmd, connection* conn)
@@ -378,6 +444,8 @@ void instance::mp_mute(command& cmd, connection* conn)
 	css << "sc " << u;
 	cn->state.cg_mute(css) << "\n";
 	channels[ch]->broadcast_cmd(css.str());
+	ss << "Done.\n";
+	man_display(ss.str(), conn);
 
 }
 void instance::mp_silent(command& cmd, connection* conn)
@@ -423,4 +491,6 @@ void instance::mp_silent(command& cmd, connection* conn)
 	css << "sc " << u;
 	cn->state.cg_silent(css) << "\n";
 	channels[ch]->broadcast_cmd(css.str());
+	ss << "Done.\n";
+	man_display(ss.str(), conn);
 }

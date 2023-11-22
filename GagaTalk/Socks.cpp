@@ -1,4 +1,5 @@
 #include<winsock2.h>
+#include<WS2tcpip.h>
 #include "gt_defs.h"
 #include "client.h"
 #pragma comment(lib, "ws2_32.lib")
@@ -34,6 +35,9 @@ int connection::connect(const char* host, uint16_t port)//sync
 	plat->sk_voip = socket(AF_INET, SOCK_DGRAM, 0);
 	if (!plat->sk_voip) return -1;
 	hostent* pHost = gethostbyname(host);
+	//ADDRINFOA* hs;
+	//auto af = getaddrinfo(host, nullptr, nullptr, &hs);
+
 	if (!pHost)
 	{
 		//printf("Unable to resolve hostname:%s\n", host);
@@ -176,7 +180,8 @@ int connection::send_command(std::string c)
 	if (!plat->sk_cmd) return false;
 	return send(plat->sk_cmd, c.c_str(), c.length(), 0);
 
-}int connection::send_voip_pack(const char* buf, int sz)
+}
+int connection::send_voip_pack(const char* buf, int sz)
 {
 	if (!plat->sk_voip) return false;
 	return sendto(plat->sk_voip, buf, sz, 0, (sockaddr*)&plat->addr_server, sizeof plat->addr_server);
