@@ -205,7 +205,7 @@ int connection::disconnect()
 	}
 	if (plat->th_voip.get_id() != std::thread::id())
 		plat->th_voip.detach();
-	if (plat->th_cmd.get_id() != std::thread::id())
+	if (plat->th_cmd.get_id() != std::thread::id() && plat->th_cmd.get_id() != std::this_thread::get_id())
 		plat->th_cmd.join();
 	//if (plat->th_heartbeat.get_id() != std::thread::id())
 	//	plat->th_heartbeat.detach();

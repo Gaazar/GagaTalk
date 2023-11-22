@@ -23,6 +23,21 @@ bool connection::permission(std::string name, chid_t chid)
 	return false;
 
 }
+bool connection::permission(std::string name, chid_t chid, chid_t chid2)
+{
+	if (server->server_roles[role_server].permissions.count(name))
+		return true;
+	if (!server->channels.count(chid)) return false;
+	std::string role;
+	server->db_get_role_channel(suid, chid, role);
+	if (!server->channel_roles[role].permissions.count(name))
+		return false;
+	server->db_get_role_channel(suid, chid2, role);
+	if (!server->channel_roles[role].permissions.count(name))
+		return false;
+	return true;
+
+}
 
 void instance::mp_grk(command& cmd, connection* conn)
 {
@@ -268,29 +283,39 @@ void instance::mp_mod_channel(command& cmd, connection* conn)
 		man_display(ss.str(), conn);
 		return;
 	}
+	channel* c = channels[ch];
 	const char* name = nullptr;
 	const char* desc = nullptr;
-	if (cmd.n_opt_val("-n"))
 	{
-		if (conn && !conn->permission("modify.channel.name", ch))
+		std::lock_guard<std::mutex> g(m_conn);
+		if (cmd.n_opt_val("-n"))
 		{
-			ss << "permission denied. modify.channel.name\n";
-			man_display(ss.str(), conn);
-			return;
+			if (conn && !conn->permission("modify.channel.name", ch))
+			{
+				ss << "permission denied. modify.channel.name\n";
+				man_display(ss.str(), conn);
+				return;
+			}
+			name = cmd.option("-n").c_str();
+			c->name = name;
 		}
-		name = cmd.option("-n").c_str();
-	}
-	if (cmd.n_opt_val("-d"))
-	{
-		if (conn && !conn->permission("modify.channel.description", ch))
+		if (cmd.n_opt_val("-d"))
 		{
-			ss << "permission denied. modify.channel.description\n";
-			man_display(ss.str(), conn);
-			return;
+			if (conn && !conn->permission("modify.channel.description", ch))
+			{
+				ss << "permission denied. modify.channel.description\n";
+				man_display(ss.str(), conn);
+				return;
+			}
+			desc = cmd.option("-d").c_str();
+			c->description = desc;
 		}
-		desc = cmd.option("-d").c_str();
 	}
 	db_update_channel(ch, name, desc);
+	std::stringstream css;
+	c->cgl_listinfo(css);
+	broadcast(css.str());
+
 	ss << "Done.\n";
 	man_display(ss.str(), conn);
 
@@ -491,6 +516,42 @@ void instance::mp_silent(command& cmd, connection* conn)
 	css << "sc " << u;
 	cn->state.cg_silent(css) << "\n";
 	channels[ch]->broadcast_cmd(css.str());
+	ss << "Done.\n";
+	man_display(ss.str(), conn);
+}
+void instance::mp_move(command& cmd, connection* conn)
+{
+	std::stringstream ss;
+	if (cmd.n_args() < 3)
+	{
+		man_display("argument mismatch.\n", conn);
+		return;
+	}
+	suid_t u = stru64(cmd[1]);
+	chid_t ch = stru64(cmd[2]);
+	if (!connections.count(u))
+	{
+		ss << "no such user suid:" << u << " \n";
+		man_display(ss.str(), conn);
+		return;
+	}
+	if (!channels.count(ch))
+	{
+		ss << "no such user suid:" << u << " \n";
+		man_display(ss.str(), conn);
+		return;
+	}
+	connection* cn = connections[u];
+	if (conn && !conn->permission("admin.move", cn->current_chid, ch))
+	{
+		ss << "permission denied. admin.silent\n";
+		man_display(ss.str(), conn);
+		return;
+	}
+	{
+		std::lock_guard<std::mutex> g(m_conn);
+		cn->join_channel(ch);
+	}
 	ss << "Done.\n";
 	man_display(ss.str(), conn);
 }

@@ -19,7 +19,7 @@
 typedef int SOCKET;
 typedef sockaddr_in SOCKADDR_IN;
 #endif
-#define VERSION_SEQ 3
+#define VERSION_SEQ 4
 struct instance;
 extern bool terminated;
 //typedef std::unordered_set<std::string> pm_set;
@@ -61,6 +61,7 @@ struct connection : RemoteClientDesc
 	std::stringstream& cg_state(std::stringstream& ss);//cg = command generation, arguments
 	bool permission(std::string name);
 	bool permission(std::string name, chid_t chid);
+	bool permission(std::string name, chid_t chid, chid_t chid2);//true when both of chid permite
 };
 struct channel : ChannelDesc
 {
@@ -129,6 +130,7 @@ struct instance
 	void mp_sql(command& cmd, connection* conn);
 	void mp_mute(command& cmd, connection* conn);
 	void mp_silent(command& cmd, connection* conn);
+	void mp_move(command& cmd, connection* conn);
 
 	static void man_help(connection* conn);
 	static void man_display(std::string s, connection* conn);

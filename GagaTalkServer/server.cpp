@@ -314,7 +314,7 @@ void instance::on_man_cmd(command& cmd, connection* conn)
 	else if (cmd[0] == "delc") mp_del_channel(cmd, conn);
 	else if (cmd[0] == "sql") mp_sql(cmd, conn);
 	else if (cmd[0] == "mute") mp_mute(cmd, conn);
-	else if (cmd[0] == "silent") mp_silent(cmd, conn);
+	else if (cmd[0] == "move") mp_move(cmd, conn);
 }
 void instance::cl_move(suid_t suid, chid_t chid)
 {

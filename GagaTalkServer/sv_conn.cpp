@@ -120,7 +120,6 @@ void connection::on_recv_cmd(command& cmd)
 		std::lock_guard<std::mutex> g(server->m_conn);
 		if (!server->channels.count(chid))
 			return;
-		cert_code = randu32();
 		join_channel(chid);
 		//auto bcmd = fmt::format("rd {} -c {}\n", suid, chid);
 		//server->broadcast(bcmd.c_str(), bcmd.length());
@@ -265,6 +264,7 @@ void connection::join_channel(uint32_t chid)
 			current_chid = 0;
 			return;
 		}
+		cert_code = randu32();
 		if (server->channels.count(chid))
 		{
 			current_chid = chid;
