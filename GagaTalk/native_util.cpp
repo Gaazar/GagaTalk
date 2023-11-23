@@ -284,7 +284,7 @@ namespace native
 		for (int i = 0; i < pool_size; ++i)
 		{
 			ResumeThread(workers[i].thread.native_handle());
-			workers[i].thread.detach();
+			workers[i].thread.join();
 		}
 		dispatcher.join();
 	}

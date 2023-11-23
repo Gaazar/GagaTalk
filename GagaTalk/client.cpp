@@ -554,7 +554,6 @@ void client_set_global_silent(bool s, bool broadcast)
 }
 int client_uninit()
 {
-	discard = true;
 	for (auto& i : connections)
 	{
 		i.second->disconnect();
@@ -563,6 +562,7 @@ int client_uninit()
 	sapi_uninit();
 	platform_uninit();
 	configs_uninit();
+	discard = true;
 	c_th_heartbeat.detach();
 	return 0;
 }
