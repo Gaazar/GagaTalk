@@ -555,6 +555,10 @@ void client_set_global_silent(bool s, bool broadcast)
 int client_uninit()
 {
 	discard = true;
+	for (auto& i : connections)
+	{
+		i.second->disconnect();
+	}
 	tray_uninit();
 	sapi_uninit();
 	platform_uninit();
