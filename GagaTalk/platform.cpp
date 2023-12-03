@@ -648,6 +648,7 @@ void connection::on_recv_voip_pack(const char* buffer, int len)
 		}
 		else
 		{
+			debugger.npak_pb_null++;
 			//printf("empty playback at on_recv_voip_pack\n");
 			//(*((int*)0)) = 0;
 		}

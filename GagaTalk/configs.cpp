@@ -165,6 +165,7 @@ int configs_init()
 }
 int configs_uninit()
 {
+	sqlite3_close(db);
 	return 0;
 }
 int release_configurations()

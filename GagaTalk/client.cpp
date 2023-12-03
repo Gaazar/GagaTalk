@@ -17,6 +17,8 @@ delegate<void(std::string type, connection* conn)> e_server;
 delegate<void(std::string type, channel* channel)> e_channel;
 delegate<void(std::string type, entity* entity)> e_entity;
 std::thread c_th_heartbeat;
+debug_state debugger;
+
 
 void connection::on_recv_cmd(command& cmd)
 {

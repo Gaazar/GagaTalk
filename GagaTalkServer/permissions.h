@@ -7,7 +7,7 @@ manage\n\
 sql\n\
 remote.command\n\
 remote.command.broadcast\n\
-\n\
+remote.configuration\n\
 \n\
 report\n\
 broadcast\

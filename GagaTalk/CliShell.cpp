@@ -5,6 +5,8 @@
 #include <iostream>
 #include <configor/json.hpp>
 
+#include "logger.h"
+
 #pragma comment(lib,"opus.lib")
 #define SESSION_ID 0x00FF8877 // 16746615
 
@@ -54,7 +56,6 @@ void print_usage()
 }
 std::vector<std::string> path;
 
-
 void print_head()
 {
 	for (auto& i : path)
@@ -62,6 +63,7 @@ void print_head()
 }
 void shell_conf()
 {
+
 	command_buffer cb;
 	command cmd;
 	char ch;
@@ -318,6 +320,7 @@ void shell_man()
 }
 int shell_main()
 {
+	//log_i(nullptr, nullptr);
 	srand(time(nullptr));
 	client_init();
 	std::vector<audio_device> devs;
@@ -525,6 +528,7 @@ int shell_main()
 					{
 						printf("%s(%u)[%u]: vp=%p, Npak=%u\n", i.second->name.c_str(), i.second->suid,
 							i.second->current_chid, i.second->playback, i.second->n_pak);
+						printf("Npak_Address_INV=%u\nNpak_PB_NULL=%u\n", debugger.npak_ad_inv, debugger.npak_pb_null);
 					}
 				}
 				else if (cmd[0] == "man")

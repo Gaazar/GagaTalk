@@ -544,7 +544,7 @@ void instance::mp_move(command& cmd, connection* conn)
 	connection* cn = connections[u];
 	if (conn && !conn->permission("admin.move", cn->current_chid, ch))
 	{
-		ss << "permission denied. admin.silent\n";
+		ss << "permission denied. admin.move\n";
 		man_display(ss.str(), conn);
 		return;
 	}

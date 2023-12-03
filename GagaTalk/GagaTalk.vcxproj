@@ -152,6 +152,7 @@
     <ClCompile Include="configs.cpp" />
     <ClCompile Include="FrameAligner.cpp" />
     <ClCompile Include="GagaTalk.cpp" />
+    <ClCompile Include="logger.cpp" />
     <ClCompile Include="native_util.cpp" />
     <ClCompile Include="platform.cpp" />
     <ClCompile Include="Resampler.cpp" />
@@ -169,6 +170,7 @@
     <ClInclude Include="delegate.h" />
     <ClInclude Include="events.h" />
     <ClInclude Include="IAudioFrameProcessor.h" />
+    <ClInclude Include="logger.h" />
     <ClInclude Include="native_util.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="RingQueue.h" />

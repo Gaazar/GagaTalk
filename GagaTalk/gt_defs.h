@@ -125,7 +125,7 @@ static std::string escape(std::string in)
 		case '\n':
 		case '\'':
 		case '\"':
-		case '-':
+		//case '-':
 			out << '\\';
 			n++;
 			break;
