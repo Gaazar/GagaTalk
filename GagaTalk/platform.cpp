@@ -574,6 +574,7 @@ int voice_playback::create_devices(std::string device_id)
 					{
 						printf("AUDCLNT_E_OUT_OF_ORDER at voice_playback\n");
 						aud_out->ReleaseBuffer(0, 0);
+						f.Release();
 						continue;
 					}
 					else if (hr != S_OK)
