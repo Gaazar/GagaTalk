@@ -191,6 +191,7 @@ int sapi_say(std::string s);
 int sapi_cancel();
 int sapi_disable();
 int sapi_enable();
+std::string debug_devinfo();
 
 int tray_init();
 int tray_uninit();

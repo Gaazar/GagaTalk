@@ -33,6 +33,7 @@ voice_recorder* p_recorder = nullptr;
 recorder_ref* p_rec_lb_ref = nullptr;
 voice_playback* p_pb_loopback = nullptr;
 std::mutex p_m_rec_ref;
+std::mutex p_m_cd;
 std::string p_outdev_id;
 std::string p_indev_id;
 float p_master_mul = 1.f;
@@ -131,7 +132,7 @@ struct voice_recorder
 		hr = CreateAudioClient(pEndpoint, &aud_cli);
 		aud_cli->GetMixFormat(&wfmt);
 		rsmplr = new Resampler(wfmt->nSamplesPerSec, 48000);
-		fa = FrameAligner(480);
+		//fa = FrameAligner(480);
 		if (wfmt->nChannels != 1)
 		{
 			printf("Multiple channel microphone is not supported yet, channel 1 will be used.\n");
@@ -265,6 +266,7 @@ public:
 	}
 	void post_audio_frame(AudioFrame* af)
 	{
+		if (discarded) return;
 		AudioFrame f;
 		f.Allocate(af->nSamples, af->samples, af->nChannel);
 		if (wfmt->nSamplesPerSec != 48000)
@@ -286,6 +288,7 @@ public:
 	}
 	void post_opus_pack(const char* buf, int sz)
 	{
+		if (discarded) return;
 		float tmp_pcm[1920];
 		AudioFrame f;
 		int n_s = opus_decode_float(aud_dec, (unsigned char*)buf, sz, tmp_pcm, 1920, 0);
@@ -349,6 +352,7 @@ void plat_delete_vpb(voice_playback* vp)
 
 bool plat_set_input_device(std::string devid)
 {
+	std::lock_guard<std::mutex> g(p_m_cd);
 	IMMDevice* d = nullptr;
 	wchar_t* wd;
 	a2w(devid.c_str(), devid.length(), &wd);
@@ -370,6 +374,7 @@ std::string plat_get_input_device()
 }
 bool plat_set_output_device(std::string devid)
 {
+	std::lock_guard<std::mutex> g(p_m_cd);
 	IMMDevice* d = nullptr;
 	wchar_t* wd;
 	a2w(devid.c_str(), devid.length(), &wd);
@@ -391,7 +396,7 @@ bool plat_set_output_device(std::string devid)
 	return false;
 
 }
-std::string plat_get_output_device() 
+std::string plat_get_output_device()
 {
 	return p_outdev_id;
 
@@ -542,6 +547,9 @@ int voice_playback::create_devices(std::string device_id)
 	hr = CreateAudioClient(pEndpoint, &aud_cli);
 	aud_cli->GetMixFormat(&wfmt);
 	rsmplr = new  Resampler(48000, wfmt->nSamplesPerSec);
+	uint32_t fsz = ceilf(wfmt->nSamplesPerSec * 0.01f);
+	if (fsz != fa.GetFrameSize())
+		fa = FrameAligner(fsz);
 	auto hev = CreateEvent(nullptr, false, false, nullptr);
 	hr = aud_cli->SetEventHandle(hev);
 	hr = aud_cli->GetService(IID_PPV_ARGS(&aud_out));
@@ -617,6 +625,7 @@ int voice_playback::delete_devices()
 	if (rsmplr)
 		delete rsmplr;
 	th_play.join();
+	aud_buffer.clear();
 	return 0;
 }
 voice_playback::voice_playback() : fa(480), aud_buffer(16)
@@ -644,6 +653,7 @@ void connection::on_recv_voip_pack(const char* buffer, int len)
 	{
 		if (entities[rid]->playback)
 		{
+			std::lock_guard<std::mutex> g(p_m_cd);
 			entities[rid]->playback->post_opus_pack(buffer + 4, len - 4);
 			entities[rid]->n_pak++;
 		}
@@ -757,9 +767,9 @@ void enable_voice_loopback()
 		p_rec_lb_ref = plat_create_vr();
 
 		p_rec_lb_ref->callback = [](AudioFrame* f)
-		{
-			p_pb_loopback->post_audio_frame(f);
-		};
+			{
+				p_pb_loopback->post_audio_frame(f);
+			};
 	}
 }
 void disable_voice_loopback()
@@ -863,6 +873,13 @@ bool plat_enum_output_device(std::vector<audio_device>& ls)
 	}
 	if (col) col->Release();
 	return true;
+}
+std::string debug_devinfo()
+{
+	std::stringstream ss;
+
+	return ss.str();
+
 }
 
 

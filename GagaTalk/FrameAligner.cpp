@@ -7,6 +7,11 @@ FrameAligner::FrameAligner(uint32_t target_frame_size, uint32_t channel_count)
 	target_size = target_frame_size;
 	buffer = new float[target_frame_size * channel_count];
 }
+FrameAligner::~FrameAligner()
+{
+	//delete[] buffer; //it cause heap crack ? why
+	buffer = nullptr;
+}
 bool FrameAligner::Input(AudioFrame& in_f)
 {
 	assert(in_f.nChannel == nChannel);
@@ -26,6 +31,7 @@ bool FrameAligner::Input(AudioFrame& in_f)
 	}
 	nBuffered = in_f.nSamples - o;
 	memcpy(buffer, in_f.samples + o * nChannel, sizeof(float) * nBuffered * nChannel);
+	//assert(nBuffered * nChannel <= target_size * nChannel);
 
 	return true;
 }
@@ -40,3 +46,9 @@ uint32_t FrameAligner::Output(AudioFrame* f)
 	}
 	return sz;
 }
+
+uint32_t FrameAligner::GetFrameSize()
+{
+	return target_size;
+}
+

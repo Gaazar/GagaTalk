@@ -54,8 +54,10 @@ class FrameAligner : public IAudioFrameProcessor
 	std::vector<AudioFrame> frames;
 public:
 	FrameAligner(uint32_t target_frame_size,uint32_t channel_count = 1);
+	~FrameAligner();
 	bool Input(AudioFrame& f);
 	uint32_t Output(AudioFrame* f);
+	uint32_t GetFrameSize();
 
 };
 

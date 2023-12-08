@@ -70,4 +70,10 @@ public:
 		write_pos = index(write_pos);
 		read_pos = index(read_pos);
 	}
+	void clear()
+	{
+		AudioFrame f;
+		while (read(&f))
+			f.Release();
+	}
 };
