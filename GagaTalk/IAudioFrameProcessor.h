@@ -53,7 +53,10 @@ class FrameAligner : public IAudioFrameProcessor
 	float* buffer;
 	std::vector<AudioFrame> frames;
 public:
-	FrameAligner(uint32_t target_frame_size,uint32_t channel_count = 1);
+	FrameAligner(uint32_t target_frame_size, uint32_t channel_count = 1);
+	FrameAligner(const FrameAligner& f);
+	FrameAligner(FrameAligner&& f) noexcept;
+	FrameAligner& operator =(const FrameAligner& f);
 	~FrameAligner();
 	bool Input(AudioFrame& f);
 	uint32_t Output(AudioFrame* f);
@@ -157,7 +160,7 @@ class GainClamp : public IAudioFrameProcessor
 	float gain = 1;
 	float clamp = 1;
 public:
-	GainClamp(float gain = 0,float clamp = 0);
+	GainClamp(float gain = 0, float clamp = 0);
 	float Gain();
 	float Gain(float gain);
 	float Clamp();

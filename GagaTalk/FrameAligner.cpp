@@ -6,11 +6,37 @@ FrameAligner::FrameAligner(uint32_t target_frame_size, uint32_t channel_count)
 	nChannel = channel_count;
 	target_size = target_frame_size;
 	buffer = new float[target_frame_size * channel_count];
+	//printf("newfa %p\t%u,%u\n", this, target_frame_size, channel_count);
 }
 FrameAligner::~FrameAligner()
 {
-	//delete[] buffer; //it cause heap crack ? why
+	if (buffer)
+		delete[] buffer;
 	buffer = nullptr;
+	//printf("delfa %p\t%u,%u\n", this, target_size, nChannel);
+}
+FrameAligner::FrameAligner(const FrameAligner& f)
+{
+	nBuffered = 0;
+	nChannel = f.nChannel;
+	target_size = f.target_size;
+	buffer = new float[target_size * nChannel];
+}
+FrameAligner::FrameAligner(FrameAligner&& f) noexcept
+{
+	nBuffered = 0;
+	nChannel = f.nChannel;
+	target_size = f.target_size;
+	buffer = f.buffer;
+	f.buffer = nullptr;
+}
+FrameAligner& FrameAligner::operator =(const FrameAligner& f)
+{
+	nBuffered = 0;
+	nChannel = f.nChannel;
+	target_size = f.target_size;
+	buffer = new float[target_size * nChannel];
+	return *this;
 }
 bool FrameAligner::Input(AudioFrame& in_f)
 {
