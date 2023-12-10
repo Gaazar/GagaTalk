@@ -533,7 +533,9 @@ void client_set_global_mute(bool m, bool broadcast)
 	auto server = client_get_current_server();
 	plat_set_global_mute(m);
 	conf_set_global_mute(m);
-	e_entity("mute", std::move(server->entities[server->suid]));
+	if (client_get_current_server())
+		e_entity("mute", std::move(server->entities[server->suid]));
+
 	if (server && broadcast)
 	{
 		server->entity_state.mute = m;

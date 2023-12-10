@@ -543,6 +543,10 @@ int shell_main()
 						c->send_command(s.c_str(), s.length());
 					}
 				}
+				else if (cmd[0] == "play")
+				{
+
+				}
 			}
 			print_head();
 		}

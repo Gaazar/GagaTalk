@@ -63,19 +63,22 @@ int a2w(const char* in, int len, wchar_t** out)
 	*out = buffer;
 	return wcl;
 }
-HRESULT CreateAudioClient(IMMDevice* pDevice, IAudioClient** ppAudioClient);
-struct voice_recorder
+HRESULT CreateAudioClient(IMMDevice* pDevice, IAudioClient** ppAudioClient, DWORD streamFlag = 0);
+struct Ivoice_recorder
 {
 	std::thread th_record;
 	IAudioClient* aud_cli;
 	IAudioCaptureClient* aud_in;
-	//std::function<void(AudioFrame*)> callback;
-
-	configor::json filter_config;
-	std::vector<IAudioFrameProcessor*> filters;
 	WAVEFORMATEX* wfmt;
 	FrameAligner fa;
 	Resampler* rsmplr = nullptr;
+	HANDLE hev = 0;
+
+};
+struct voice_recorder : Ivoice_recorder
+{
+	configor::json filter_config;
+	std::vector<IAudioFrameProcessor*> filters;
 	bool discarded = false;
 
 	voice_recorder();
@@ -141,72 +144,13 @@ struct voice_recorder
 		//{
 		//	rsmplr[i] = Resampler(wfmt->nSamplesPerSec, 48000);
 		//}
-		auto hev = CreateEvent(nullptr, false, false, nullptr);
+		hev = CreateEvent(nullptr, false, false, nullptr);
 		hr = aud_cli->SetEventHandle(hev);
 		hr = aud_cli->GetService(IID_PPV_ARGS(&aud_in));
 		discarded = false;
 		th_record = std::thread([=]()
 			{
-				BYTE* pcm = nullptr;
-				auto hr = aud_cli->Start();
-				while (!discard && !discarded)
-				{
-					UINT packsz;
-					UINT numFramesAvailable;
-					auto retv = WaitForSingleObject(hev, INFINITE);
-					aud_in->GetNextPacketSize(&packsz);
-					DWORD flags;
-					if (packsz != 0)
-					{
-						hr = aud_in->GetBuffer(
-							&pcm,
-							&numFramesAvailable,
-							&flags, NULL, NULL);
-
-						if ((flags & AUDCLNT_BUFFERFLAGS_SILENT) || p_master_mute)
-						{
-							pcm = NULL;  // Tell CopyData to write silence.
-						}
-						if (pcm)
-						{
-							AudioFrame f;
-							f.Allocate(numFramesAvailable, (float*)pcm, wfmt->nChannels);
-							if (wfmt->nChannels > 1)
-							{
-								AudioFrame* f_c = new AudioFrame[wfmt->nChannels];
-								ChannelUtil::Split(f, f_c);
-								f.Release();
-								f.Allocate(f_c[0].nSamples, f_c[0].samples);
-								for (auto i = 0; i < wfmt->nChannels; i++)
-								{
-									f_c[i].Release();
-								}
-								delete[] f_c;
-							}
-							if (wfmt->nSamplesPerSec != 48000)
-							{
-								rsmplr->Input(f);
-								f.Release();
-								if (!rsmplr->Output(&f))
-								{
-									printf("Resampler Error\n");
-									return;
-								}
-							}
-							fa.Input(f);
-							f.Release();
-							while (fa.Output(&f))
-							{
-								on_aligned_pack(&f);
-								f.Release();
-							}
-						}
-						hr = aud_in->ReleaseBuffer(numFramesAvailable);
-					}
-				}
-				aud_cli->Release();
-				aud_in->Release();
-				CloseHandle(hev);
+				this->record_thread();
 			});
 		pEndpoint->Release();
 	}
@@ -225,7 +169,81 @@ struct voice_recorder
 		create_devices(devid);
 	}
 	void set_filter(std::string s);
+	int record_thread();
 };
+struct voice_recorder_loopback : Ivoice_recorder
+{
+	bool discarded = false;
+
+	voice_recorder_loopback();
+	~voice_recorder_loopback();
+	void on_aligned_pack(AudioFrame* af)
+	{
+		AudioFrame f;
+		f.Allocate(af->nSamples, af->samples, af->nChannel);
+		{
+			std::lock_guard<std::mutex> g(p_m_rec_ref);
+			for (auto& i : p_record_refs)
+			{
+				if (i->callback)
+					i->callback(&f);
+			}
+		}
+		f.Release();
+	}
+	void create_devices(std::string devid)
+	{
+		IMMDevice* pEndpoint = NULL;
+		HRESULT hr = 0;
+		if (!devid.length())
+			hr = p_dev_enum->GetDefaultAudioEndpoint(eRender, eMultimedia, &pEndpoint);
+		else
+		{
+			wchar_t* wcs;
+			a2w(devid.c_str(), devid.length(), &wcs);
+			hr = p_dev_enum->GetDevice(wcs, &pEndpoint);
+			delete wcs;
+		}
+		hr = CreateAudioClient(pEndpoint, &aud_cli, AUDCLNT_STREAMFLAGS_LOOPBACK);
+		aud_cli->GetMixFormat(&wfmt);
+		rsmplr = new Resampler(wfmt->nSamplesPerSec, 48000);
+		//fa = FrameAligner(480);
+		if (wfmt->nChannels != 1)
+		{
+			printf("Multiple channel microphone is not supported yet, channel 1 will be used.\n");
+		}
+		//for (int i = 0; i < wfmt->nChannels; i++)
+		//{
+		//	rsmplr[i] = Resampler(wfmt->nSamplesPerSec, 48000);
+		//}
+		hev = CreateEvent(nullptr, false, false, nullptr);
+		hr = aud_cli->SetEventHandle(hev);
+		hr = aud_cli->GetService(IID_PPV_ARGS(&aud_in));
+		discarded = false;
+		th_record = std::thread([=]()
+			{
+				this->record_thread();
+			});
+		pEndpoint->Release();
+	}
+	int delete_devices()
+	{
+		if (discarded)
+			return -1;
+		discarded = true;
+		delete rsmplr;
+		th_record.join();
+		return 0;
+	}
+	void change_devices(std::string devid)
+	{
+		delete_devices();
+		create_devices(devid);
+	}
+	int record_thread();
+
+};
+
 struct voice_playback//auto convert channels and samplerate
 {
 	//voice data
@@ -241,6 +259,7 @@ struct voice_playback//auto convert channels and samplerate
 	WAVEFORMATEX* wfmt;
 	FrameAligner fa;
 	Resampler* rsmplr = nullptr;
+	HANDLE hev = 0;
 	float volume_mul = 1;
 	bool mute = false;
 	bool discarded = false;
@@ -317,6 +336,7 @@ public:
 		aud_dec = opus_decoder_create(48000, 1, &ec);
 		opus_decoder_destroy(prev);
 	}
+	int play_thread();
 	voice_playback();
 	~voice_playback();
 };
@@ -329,7 +349,14 @@ int platform_init()
 	if (!SUCCEEDED(hr)) return -1;
 
 	socket_init();
-
+	//p_pb_loopback = plat_create_vpb();
+	//auto vrlp = new voice_recorder_loopback();
+	//auto ref = new recorder_ref();
+	//p_record_refs.push_back(ref);
+	//ref->callback = [](AudioFrame* f)
+	//	{
+	//		p_pb_loopback->post_audio_frame(f);
+	//	};
 }
 
 voice_playback* plat_create_vpb()
@@ -401,7 +428,7 @@ std::string plat_get_output_device()
 	return p_outdev_id;
 
 }
-HRESULT CreateAudioClient(IMMDevice* pDevice, IAudioClient** ppAudioClient)
+HRESULT CreateAudioClient(IMMDevice* pDevice, IAudioClient** ppAudioClient, DWORD streamFlag)
 {
 	if (!pDevice)
 	{
@@ -436,7 +463,7 @@ HRESULT CreateAudioClient(IMMDevice* pDevice, IAudioClient** ppAudioClient)
 	// Open the stream and associate it with an audio session.
 	hr = pAudioClient->Initialize(
 		AUDCLNT_SHAREMODE_SHARED,
-		AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+		AUDCLNT_STREAMFLAGS_EVENTCALLBACK | streamFlag,
 		hnsRequestedDuration,
 		0,
 		(WAVEFORMATEX*)pwfx,
@@ -467,7 +494,7 @@ HRESULT CreateAudioClient(IMMDevice* pDevice, IAudioClient** ppAudioClient)
 		// Open the stream and associate it with an audio session.
 		CHECK_HR(hr = pAudioClient->Initialize(
 			AUDCLNT_SHAREMODE_EXCLUSIVE,
-			AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+			AUDCLNT_STREAMFLAGS_EVENTCALLBACK | streamFlag,
 			hnsRequestedDuration,
 			hnsRequestedDuration,
 			(WAVEFORMATEX*)pwfx,
@@ -498,7 +525,8 @@ recorder_ref* plat_create_vr()
 	if (!p_recorder)
 	{
 		auto vr = new voice_recorder();
-		p_recorder = vr;
+		//auto vr = new voice_recorder_loopback();
+		p_recorder = (voice_recorder*)vr;
 		std::string f;
 		conf_get_filter(f);
 		plat_set_filter(f);
@@ -550,69 +578,14 @@ int voice_playback::create_devices(std::string device_id)
 	uint32_t fsz = ceilf(wfmt->nSamplesPerSec * 0.01f);
 	if (fsz != fa.GetFrameSize())
 		fa = FrameAligner(fsz);
-	auto hev = CreateEvent(nullptr, false, false, nullptr);
+	 hev = CreateEvent(nullptr, false, false, nullptr);
 	hr = aud_cli->SetEventHandle(hev);
 	hr = aud_cli->GetService(IID_PPV_ARGS(&aud_out));
 	hr = aud_cli->GetService(IID_PPV_ARGS(&aud_vol));
 	discarded = false;
-	th_play = std::thread([this, hev]()
+	th_play = std::thread([=]()
 		{
-			BYTE* pcm = nullptr;
-			auto hr = aud_cli->Start();
-			//auto hmmt = AvSetMmThreadCharacteristics(L"Audio", &task_index);
-			while (!discarded)
-			{
-				auto retv = WaitForSingleObject(hev, INFINITE);
-				//0x88890006 
-				//constexpr bool b = 0x88890006 == AUDCLNT_E_BUFFER_TOO_LARGE;
-				AUDCLNT_E_BUFFER_TOO_LARGE;
-				unsigned full = 0, padding = 0;
-				AudioFrame f;
-				float bus_vol = p_master_mul * volume_mul;
-				if (aud_buffer.read(&f) && !p_master_silent && !mute)
-				{
-					hr = aud_cli->GetBufferSize(&full);
-					assert(hr == S_OK);
-					hr = aud_cli->GetCurrentPadding(&padding);
-					assert(hr == S_OK);
-					int frames = full - padding;
-					hr = aud_out->GetBuffer(frames, &pcm);
-					assert(hr == S_OK);
-					if (hr == AUDCLNT_E_OUT_OF_ORDER)
-					{
-						printf("AUDCLNT_E_OUT_OF_ORDER at voice_playback\n");
-						aud_out->ReleaseBuffer(0, 0);
-						f.Release();
-						continue;
-					}
-					else if (hr != S_OK)
-					{
-						printf("UNKNOWN_ERROR:%d at voice_playback\n", hr);
-					}
-					int min_smp = min(f.nSamples, frames);
-					for (int i = 0; i < min_smp; i++)
-					{
-						for (int c = 0; c < wfmt->nChannels; c++)
-						{
-							((float*)pcm)[i * wfmt->nChannels + c] = f.samples[i] * bus_vol;
-						}
-					}
-
-					hr = aud_out->ReleaseBuffer(f.nSamples, 0);
-					assert(hr == S_OK);
-					f.Release();
-				}
-				else
-				{
-					std::this_thread::sleep_for(std::chrono::milliseconds(10));
-				}
-			}
-			aud_cli->Stop();
-			aud_out->Release();
-			aud_cli->Release();
-			aud_cli = nullptr;
-			aud_out = nullptr;
-			CloseHandle(hev);
+			this->play_thread();
 		});
 	//ac->Start();
 	hr = pEndpoint->Release();
@@ -641,6 +614,71 @@ voice_playback::~voice_playback()
 {
 	delete_devices();
 }
+void voice_playback::change_device(std::string device_id)
+{
+	delete_devices();
+	create_devices(device_id);
+}
+int voice_playback::play_thread()
+{
+	BYTE* pcm = nullptr;
+	auto hr = aud_cli->Start();
+	//auto hmmt = AvSetMmThreadCharacteristics(L"Audio", &task_index);
+	while (!discarded)
+	{
+		auto retv = WaitForSingleObject(hev, INFINITE);
+		//0x88890006 
+		//constexpr bool b = 0x88890006 == AUDCLNT_E_BUFFER_TOO_LARGE;
+		AUDCLNT_E_BUFFER_TOO_LARGE;
+		unsigned full = 0, padding = 0;
+		AudioFrame f;
+		float bus_vol = p_master_mul * volume_mul;
+		if (aud_buffer.read(&f) && !p_master_silent && !mute)
+		{
+			hr = aud_cli->GetBufferSize(&full);
+			assert(hr == S_OK);
+			hr = aud_cli->GetCurrentPadding(&padding);
+			assert(hr == S_OK);
+			int frames = full - padding;
+			hr = aud_out->GetBuffer(frames, &pcm);
+			assert(hr == S_OK);
+			if (hr == AUDCLNT_E_OUT_OF_ORDER)
+			{
+				printf("AUDCLNT_E_OUT_OF_ORDER at voice_playback\n");
+				aud_out->ReleaseBuffer(0, 0);
+				f.Release();
+				continue;
+			}
+			else if (hr != S_OK)
+			{
+				printf("UNKNOWN_ERROR:%d at voice_playback\n", hr);
+			}
+			int min_smp = min(f.nSamples, frames);
+			for (int i = 0; i < min_smp; i++)
+			{
+				for (int c = 0; c < wfmt->nChannels; c++)
+				{
+					((float*)pcm)[i * wfmt->nChannels + c] = f.samples[i] * bus_vol;
+				}
+			}
+
+			hr = aud_out->ReleaseBuffer(f.nSamples, 0);
+			assert(hr == S_OK);
+			f.Release();
+		}
+		else
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
+	}
+	aud_cli->Stop();
+	aud_out->Release();
+	aud_cli->Release();
+	aud_cli = nullptr;
+	aud_out = nullptr;
+	CloseHandle(hev);
+	return 0;
+}
 void connection::on_recv_voip_pack(const char* buffer, int len)
 {
 	/*
@@ -666,11 +704,6 @@ void connection::on_recv_voip_pack(const char* buffer, int len)
 	}
 
 
-}
-void voice_playback::change_device(std::string device_id)
-{
-	delete_devices();
-	create_devices(device_id);
 }
 float entity::get_volume()
 {
@@ -705,14 +738,155 @@ voice_playback* entity::move_playback()
 	playback = nullptr;
 	return playback;
 }
-voice_recorder::voice_recorder() : fa(480)
+voice_recorder::voice_recorder()
 {
 	create_devices(p_indev_id);
 }
 voice_recorder::~voice_recorder()
 {
+}
+int voice_recorder::record_thread()
+{
+	BYTE* pcm = nullptr;
+	auto hr = aud_cli->Start();
+	while (!discard && !discarded)
+	{
+		UINT packsz;
+		UINT numFramesAvailable;
+		auto retv = WaitForSingleObject(hev, INFINITE);
+		aud_in->GetNextPacketSize(&packsz);
+		DWORD flags;
+		if (packsz != 0)
+		{
+			hr = aud_in->GetBuffer(
+				&pcm,
+				&numFramesAvailable,
+				&flags, NULL, NULL);
+
+			if ((flags & AUDCLNT_BUFFERFLAGS_SILENT) || p_master_mute)
+			{
+				pcm = NULL;  // Tell CopyData to write silence.
+			}
+			if (pcm)
+			{
+				AudioFrame f;
+				f.Allocate(numFramesAvailable, (float*)pcm, wfmt->nChannels);
+				if (wfmt->nChannels > 1)
+				{
+					AudioFrame* f_c = new AudioFrame[wfmt->nChannels];
+					ChannelUtil::Split(f, f_c);
+					f.Release();
+					f.Allocate(f_c[0].nSamples, f_c[0].samples);
+					for (auto i = 0; i < wfmt->nChannels; i++)
+					{
+						f_c[i].Release();
+					}
+					delete[] f_c;
+				}
+				if (wfmt->nSamplesPerSec != 48000)
+				{
+					rsmplr->Input(f);
+					f.Release();
+					if (!rsmplr->Output(&f))
+					{
+						printf("Resampler Error\n");
+						aud_cli->Release();
+						aud_in->Release();
+						CloseHandle(hev);
+						return -1;
+					}
+				}
+				fa.Input(f);
+				f.Release();
+				while (fa.Output(&f))
+				{
+					on_aligned_pack(&f);
+					f.Release();
+				}
+			}
+			hr = aud_in->ReleaseBuffer(numFramesAvailable);
+		}
+	}
+	aud_cli->Release();
+	aud_in->Release();
+	CloseHandle(hev);
+	return 0;
+}
+int voice_recorder_loopback::record_thread()
+{
+	BYTE* pcm = nullptr;
+	auto hr = aud_cli->Start();
+	while (!discard && !discarded)
+	{
+		UINT packsz;
+		UINT numFramesAvailable;
+		auto retv = WaitForSingleObject(hev, INFINITE);
+		aud_in->GetNextPacketSize(&packsz);
+		DWORD flags;
+		if (packsz != 0)
+		{
+			hr = aud_in->GetBuffer(
+				&pcm,
+				&numFramesAvailable,
+				&flags, NULL, NULL);
+
+			if ((flags & AUDCLNT_BUFFERFLAGS_SILENT) || p_master_mute)
+			{
+				pcm = NULL;  // Tell CopyData to write silence.
+			}
+			if (pcm)
+			{
+				AudioFrame f;
+				f.Allocate(numFramesAvailable, (float*)pcm, wfmt->nChannels);
+				if (wfmt->nChannels > 1)
+				{
+					AudioFrame* f_c = new AudioFrame[wfmt->nChannels];
+					ChannelUtil::Split(f, f_c);
+					f.Release();
+					f.Allocate(f_c[0].nSamples, f_c[0].samples);
+					for (auto i = 0; i < wfmt->nChannels; i++)
+					{
+						f_c[i].Release();
+					}
+					delete[] f_c;
+				}
+				if (wfmt->nSamplesPerSec != 48000)
+				{
+					rsmplr->Input(f);
+					f.Release();
+					if (!rsmplr->Output(&f))
+					{
+						printf("Resampler Error\n");
+						aud_cli->Release();
+						aud_in->Release();
+						CloseHandle(hev);
+						return -1;
+					}
+				}
+				fa.Input(f);
+				f.Release();
+				while (fa.Output(&f))
+				{
+					on_aligned_pack(&f);
+					f.Release();
+				}
+			}
+			hr = aud_in->ReleaseBuffer(numFramesAvailable);
+		}
+	}
+	aud_cli->Release();
+	aud_in->Release();
+	CloseHandle(hev);
+}
+voice_recorder_loopback::voice_recorder_loopback()
+{
+	create_devices("");
+}
+voice_recorder_loopback::~voice_recorder_loopback()
+{
 	delete_devices();
 }
+
 void voice_recorder::set_filter(std::string s)
 {
 	for (auto& i : filters)

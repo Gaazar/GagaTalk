@@ -53,6 +53,7 @@ class FrameAligner : public IAudioFrameProcessor
 	float* buffer;
 	std::vector<AudioFrame> frames;
 public:
+	FrameAligner();
 	FrameAligner(uint32_t target_frame_size, uint32_t channel_count = 1);
 	FrameAligner(const FrameAligner& f);
 	FrameAligner(FrameAligner&& f) noexcept;

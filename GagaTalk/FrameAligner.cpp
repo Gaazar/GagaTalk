@@ -1,5 +1,9 @@
 #include "IAudioFrameProcessor.h"
 #include <assert.h>
+FrameAligner::FrameAligner() : FrameAligner(480, 1)
+{
+
+}
 FrameAligner::FrameAligner(uint32_t target_frame_size, uint32_t channel_count)
 {
 	nBuffered = 0;
