@@ -245,6 +245,7 @@ void connection::on_mic_pack(AudioFrame* f)
 		int len = opus_encode_float(aud_enc, f->samples, f->nSamples, &buf[4], 1480 - 4);
 		if (len > 1)
 		{
+			//printf("dtx opus\n");
 			send_voip_pack((const char*)buf, len + 4);
 		}
 		//a.Release();
