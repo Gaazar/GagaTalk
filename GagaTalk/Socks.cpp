@@ -22,8 +22,9 @@ struct plat_conn
 connection::connection()
 {
 	plat = new plat_conn;
-	int e = 0;
+	int e = OPUS_OK;
 	aud_enc = opus_encoder_create(48000, 1, OPUS_APPLICATION_VOIP, &e);
+	//e = opus_encoder_ctl(aud_enc, OPUS_SET_EXPERT_FRAME_DURATION(OPUS_FRAMESIZE_60_MS));
 }
 int connection::connect(const char* host, uint16_t port)//sync
 {

@@ -20,6 +20,7 @@ std::thread c_th_heartbeat;
 debug_state debugger;
 
 
+//FrameAligner c_fa_mic_t(480 * 6);
 void connection::on_recv_cmd(command& cmd)
 {
 	if (status == state::verifing)
@@ -236,10 +237,17 @@ void connection::on_mic_pack(AudioFrame* f)
 {
 	unsigned char buf[1480];
 	((uint32_t*)buf)[0] = ssid;
-	int len = opus_encode_float(aud_enc, f->samples, f->nSamples, &buf[4], 1480 - 4);
-	if (len > 1)
+	//c_fa_mic_t.Input(*f);
+	//AudioFrame a;
+	//while (c_fa_mic_t.Output(&a))
 	{
-		send_voip_pack((const char*)buf, len + 4);
+		//f = &a;
+		int len = opus_encode_float(aud_enc, f->samples, f->nSamples, &buf[4], 1480 - 4);
+		if (len > 1)
+		{
+			send_voip_pack((const char*)buf, len + 4);
+		}
+		//a.Release();
 	}
 }
 void connection::join_channel(uint32_t chid)

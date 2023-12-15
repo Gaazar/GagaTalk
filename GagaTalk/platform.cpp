@@ -308,9 +308,9 @@ public:
 	void post_opus_pack(const char* buf, int sz)
 	{
 		if (discarded) return;
-		float tmp_pcm[1920];
+		float tmp_pcm[480 * 12];
 		AudioFrame f;
-		int n_s = opus_decode_float(aud_dec, (unsigned char*)buf, sz, tmp_pcm, 1920, 0);
+		int n_s = opus_decode_float(aud_dec, (unsigned char*)buf, sz, tmp_pcm, 480 * 120, 0);
 		f.Allocate(n_s, tmp_pcm);
 		if (wfmt->nSamplesPerSec != 48000)
 		{
@@ -578,7 +578,7 @@ int voice_playback::create_devices(std::string device_id)
 	uint32_t fsz = ceilf(wfmt->nSamplesPerSec * 0.01f);
 	if (fsz != fa.GetFrameSize())
 		fa = FrameAligner(fsz);
-	 hev = CreateEvent(nullptr, false, false, nullptr);
+	hev = CreateEvent(nullptr, false, false, nullptr);
 	hr = aud_cli->SetEventHandle(hev);
 	hr = aud_cli->GetService(IID_PPV_ARGS(&aud_out));
 	hr = aud_cli->GetService(IID_PPV_ARGS(&aud_vol));

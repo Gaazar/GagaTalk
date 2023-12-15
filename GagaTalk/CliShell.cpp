@@ -321,6 +321,32 @@ void shell_man()
 int shell_main()
 {
 	//log_i(nullptr, nullptr);
+	//FrameAligner fa(480), fb(480 * 6);
+	//AudioFrame sf, o;
+	//sf.Allocate(288);
+	//int x = 0;
+	//for (int i = 0; i < 64; i++)
+	//{
+	//	fa.Input(sf);
+	//	while (fa.Output(&o))
+	//	{
+	//		x++;
+	//		printf("o480\t%d\n", x);
+	//		o.Release();
+	//	}
+	//}
+	//x = 0;
+	//for (int i = 0; i < 64; i++)
+	//{
+	//	fb.Input(sf);
+	//	while (fb.Output(&o))
+	//	{
+	//		x++;
+	//		printf("o480*6\t%d\n", x);
+	//		o.Release();
+	//	}
+	//}
+
 	srand(time(nullptr));
 	client_init();
 	std::vector<audio_device> devs;
