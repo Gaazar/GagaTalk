@@ -190,7 +190,6 @@ namespace native
 			h_file = 0;
 			return bResults;
 		}
-
 		bool iterate(int64_t& new_size, bool& error)
 		{
 			// Check for available data.
@@ -284,7 +283,10 @@ namespace native
 		for (int i = 0; i < pool_size; ++i)
 		{
 			ResumeThread(workers[i].thread.native_handle());
-			workers[i].thread.join();
+			if (std::this_thread::get_id() != workers[i].thread.get_id())
+				workers[i].thread.join();
+			else
+				workers[i].thread.detach();
 		}
 		dispatcher.join();
 	}

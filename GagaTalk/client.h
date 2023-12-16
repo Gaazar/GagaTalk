@@ -7,7 +7,7 @@
 #include <opus/opus.h>
 #include <functional>
 
-#define BUILD_SEQ 18 
+#define BUILD_SEQ 17 
 struct debug_state
 {
 	uint32_t npak_ad_inv = 0;
