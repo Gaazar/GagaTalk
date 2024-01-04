@@ -132,9 +132,9 @@ HMENU MakeMenu()
 		for (auto& i : tr_svrs)
 		{
 			if (tr_conn && tr_conn->host == i.hostname && tr_conn->status != connection::state::disconnect)
-				AppendMenu(trm_svr, MF_STRING | MF_CHECKED, IDM_SERVER | n, sutil::s2w(i.name).c_str());
+				AppendMenu(trm_svr, MF_STRING | MF_CHECKED, IDM_SERVER | n, sutil::s2w(i.name, CP_UTF8).c_str());
 			else
-				AppendMenu(trm_svr, MF_STRING, IDM_SERVER | n, sutil::s2w(i.name).c_str());
+				AppendMenu(trm_svr, MF_STRING, IDM_SERVER | n, sutil::s2w(i.name, CP_UTF8).c_str());
 			n++;
 		}
 	}
@@ -145,9 +145,9 @@ HMENU MakeMenu()
 		for (auto& i : tr_conn->channels)
 		{
 			if (tr_conn->current == i.second)
-				AppendMenu(trm_chan, MF_STRING | MF_CHECKED, 0, sutil::s2w(i.second->name).c_str());
+				AppendMenu(trm_chan, MF_STRING | MF_CHECKED, 0, sutil::s2w(i.second->name, CP_UTF8).c_str());
 			else
-				AppendMenu(trm_chan, MF_STRING, IDM_CHANNEL | n, sutil::s2w(i.second->name).c_str());
+				AppendMenu(trm_chan, MF_STRING, IDM_CHANNEL | n, sutil::s2w(i.second->name, CP_UTF8).c_str());
 			n++;
 		}
 	}
@@ -155,7 +155,7 @@ HMENU MakeMenu()
 
 	//AppendMenu(trm_conf, MF_STRING | MF_DISABLED, 0, TEXT("ÎÞ"));
 
-	if ( tr_conn && tr_conn->status == connection::state::established  && tr_conn->current)
+	if (tr_conn && tr_conn->status == connection::state::established && tr_conn->current)
 	{
 		int n = 0;
 		AppendMenu(hMenu, MF_STRING, 0, sutil::s2w(fmt::format("ÆµµÀ: {}", tr_conn->current->name)).c_str());

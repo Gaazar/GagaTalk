@@ -104,6 +104,9 @@
     <ClInclude Include="logger.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="web.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="GagaTalk.rc">

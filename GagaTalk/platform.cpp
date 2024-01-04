@@ -263,6 +263,7 @@ struct voice_playback//auto convert channels and samplerate
 	float volume_mul = 1;
 	bool mute = false;
 	bool discarded = false;
+	float decode_buffer[480 * 12];
 
 public:
 	float get_volume()
@@ -308,10 +309,9 @@ public:
 	void post_opus_pack(const char* buf, int sz)
 	{
 		if (discarded) return;
-		float tmp_pcm[480 * 12];
 		AudioFrame f;
-		int n_s = opus_decode_float(aud_dec, (unsigned char*)buf, sz, tmp_pcm, 480 * 120, 0);
-		f.Allocate(n_s, tmp_pcm);
+		int n_s = opus_decode_float(aud_dec, (unsigned char*)buf, sz, decode_buffer, 480 * 12, 0);
+		f.Allocate(n_s, decode_buffer);
 		if (wfmt->nSamplesPerSec != 48000)
 		{
 			rsmplr->Input(f);
@@ -744,6 +744,7 @@ voice_recorder::voice_recorder()
 }
 voice_recorder::~voice_recorder()
 {
+	delete_devices();
 }
 int voice_recorder::record_thread()
 {

@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iostream>
 #include <configor/json.hpp>
+#include "web.h"
 
 #include "logger.h"
 
@@ -363,6 +364,7 @@ int shell_main()
 		printf("\t%s: %s\n", i.name.c_str(), i.id.c_str());
 	}
 	print_usage();
+	web_init();
 	char ch;
 	command_buffer cb;
 	//int a = cb.append(t, sizeof(t));
@@ -552,9 +554,9 @@ int shell_main()
 				{
 					for (auto i : c->entities)
 					{
-						printf("%s(%u)[%u]: vp=%p, Npak=%u\n", i.second->name.c_str(), i.second->suid,
+						printf("%s(%u)[%u]: \n\tvp=%p, Npak=%u\n", i.second->name.c_str(), i.second->suid,
 							i.second->current_chid, i.second->playback, i.second->n_pak);
-						printf("Npak_Address_INV=%u\nNpak_PB_NULL=%u\n", debugger.npak_ad_inv, debugger.npak_pb_null);
+						printf("\tNpak_Address_INV=%u\n\tNpak_PB_NULL=%u\n", debugger.npak_ad_inv, debugger.npak_pb_null);
 					}
 				}
 				else if (cmd[0] == "man")

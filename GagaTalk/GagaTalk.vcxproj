@@ -177,6 +177,7 @@
     <ClInclude Include="gt_defs.h" />
     <ClInclude Include="sql.h" />
     <ClInclude Include="trayicon.h" />
+    <ClInclude Include="web.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="GagaTalk.rc" />
