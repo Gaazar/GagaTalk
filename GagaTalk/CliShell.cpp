@@ -364,7 +364,6 @@ int shell_main()
 		printf("\t%s: %s\n", i.name.c_str(), i.id.c_str());
 	}
 	print_usage();
-	web_init();
 	char ch;
 	command_buffer cb;
 	//int a = cb.append(t, sizeof(t));

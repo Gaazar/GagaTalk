@@ -9,6 +9,7 @@
 #include <windows.h>
 #include <filesystem>
 #include "events.h"
+#include "web.h"
 
 using namespace configor;
 
@@ -448,6 +449,7 @@ int client_init()
 	sapi_init();
 
 	tray_init();
+	web_init();
 
 	str = sapi_get_profile();
 	if (!c_th_heartbeat.joinable())
@@ -571,10 +573,12 @@ int client_uninit()
 	{
 		i.second->disconnect();
 	}
+	web_uninit();
 	tray_uninit();
 	sapi_uninit();
 	platform_uninit();
 	configs_uninit();
+	
 	discard = true;
 	c_th_heartbeat.detach();
 	return 0;
