@@ -7,6 +7,7 @@
 #include "native_util.hpp"
 #define FMT_HEADER_ONLY
 #include <fmt/core.h>
+#include <fmt/xchar.h>
 
 using namespace std;
 
@@ -145,9 +146,9 @@ HMENU MakeMenu()
 		for (auto& i : tr_conn->channels)
 		{
 			if (tr_conn->current == i.second)
-				AppendMenu(trm_chan, MF_STRING | MF_CHECKED, 0, sutil::s2w(i.second->name, CP_UTF8).c_str());
+				AppendMenu(trm_chan, MF_STRING | MF_CHECKED, 0, sutil::s2w(i.second->name).c_str());
 			else
-				AppendMenu(trm_chan, MF_STRING, IDM_CHANNEL | n, sutil::s2w(i.second->name, CP_UTF8).c_str());
+				AppendMenu(trm_chan, MF_STRING, IDM_CHANNEL | n, sutil::s2w(i.second->name).c_str());
 			n++;
 		}
 	}
@@ -158,13 +159,13 @@ HMENU MakeMenu()
 	if (tr_conn && tr_conn->status == connection::state::established && tr_conn->current)
 	{
 		int n = 0;
-		AppendMenu(hMenu, MF_STRING, 0, sutil::s2w(fmt::format("频道: {}", tr_conn->current->name)).c_str());
+		AppendMenu(hMenu, MF_STRING, 0, fmt::format(L"频道: {}", sutil::s2w(tr_conn->current->name)).c_str());
 		for (auto& i : tr_conn->current->entities)
 		{
 			if (i->playback)
 				AppendMenu(hMenu, MF_STRING, IDM_CLIENT | n, sutil::s2w(i->name).c_str());
 			else
-				AppendMenu(hMenu, MF_STRING | MF_DISABLED, IDM_CLIENT | n, sutil::s2w(i->name + "\t自己").c_str());
+				AppendMenu(hMenu, MF_STRING | MF_DISABLED, IDM_CLIENT | n, (sutil::s2w(i->name) + L"\t自己").c_str());
 			n++;
 		}
 	}
@@ -355,12 +356,12 @@ void thread_message()
 		CW_USEDEFAULT, 0, 250, 200, NULL, NULL, tr_hinst, NULL);
 	tr_hwnd = hwnd;
 	e_channel += [](std::string t, channel* e)
+	{
+		if (t == "join")
 		{
-			if (t == "join")
-			{
-				auto b = ModifyNotificationIcon(tr_hwnd, fmt::format("服务器：{}\n频道：{}", e->conn->name, e->name));
-			}
-		};
+			auto b = ModifyNotificationIcon(tr_hwnd, fmt::format("服务器：{}\n频道：{}", e->conn->name, e->name));
+		}
+	};
 
 	MSG msg;
 	while (GetMessage(&msg, nullptr, 0, 0))

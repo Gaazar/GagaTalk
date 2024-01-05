@@ -159,8 +159,8 @@ struct voice_recorder : Ivoice_recorder
 		if (discarded)
 			return -1;
 		discarded = true;
-		delete rsmplr;
 		th_record.join();
+		delete rsmplr;
 		return 0;
 	}
 	void change_devices(std::string devid)
