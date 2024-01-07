@@ -120,10 +120,14 @@ void connection::on_recv_cmd(command& cmd)
 					{
 						e_entity(event::join, std::move(e));
 					}
-					channels[e->current_chid]->join(e, true);
+					if (e->current_chid)
+						channels[e->current_chid]->join(e, true);
 					if (suid == this->suid)
 					{
-						current = channels[e->current_chid];
+						if (e->current_chid)
+							current = channels[e->current_chid];
+						else
+							current = nullptr;
 						chid = e->current_chid;
 						channel_switch(0, e->current_chid);
 					}
@@ -133,11 +137,14 @@ void connection::on_recv_cmd(command& cmd)
 				{
 					if (suid == this->suid)
 					{
-						current = channels[e->current_chid];
+						if (e->current_chid)
+							current = channels[e->current_chid];
 						channel_switch(last_chid, e->current_chid);
 					}
-					channels[last_chid]->erase(e);
-					channels[e->current_chid]->join(e);
+					if (last_chid)
+						channels[last_chid]->erase(e);
+					if (e->current_chid)
+						channels[e->current_chid]->join(e);
 					if (suid != this->suid)
 					{
 						if (e->current_chid == chid)
