@@ -6,7 +6,6 @@
 #include <limits>
 #include "native_util.hpp"
 #include <configor/json.hpp>
-#include <windows.h>
 #include <filesystem>
 #include "events.h"
 #include "web.h"
@@ -14,9 +13,11 @@
 using namespace configor;
 
 std::map<std::string, connection*> connections;
-delegate<void(std::string type, connection* conn)> e_server;
-delegate<void(std::string type, channel* channel)> e_channel;
-delegate<void(std::string type, entity* entity)> e_entity;
+delegate<void(event type, connection* conn)> e_server;
+delegate<void(event type, channel* channel)> e_channel;
+delegate<void(event type, entity* entity)> e_entity;
+delegate<void(event type, void* data)> e_client;
+
 std::thread c_th_heartbeat;
 debug_state debugger;
 
@@ -38,13 +39,13 @@ void connection::on_recv_cmd(command& cmd)
 					conf_set_token(host, suid, cmd["-t"]);
 				}
 				//sapi_join_server(host);
-				e_server("join", this);
+				e_server(event::join, this);
 			}
 			else
 			{
 				status = state::disconnect;
 				disconnect();
-				e_server("auth", this);
+				e_server(event::auth, this);
 			}
 			printf("[%s]\n", cmd.str().c_str());
 		}
@@ -117,7 +118,7 @@ void connection::on_recv_cmd(command& cmd)
 				{
 					if (e->current_chid == chid && mic)
 					{
-						e_entity("join", std::move(e));
+						e_entity(event::join, std::move(e));
 					}
 					channels[e->current_chid]->join(e, true);
 					if (suid == this->suid)
@@ -141,13 +142,17 @@ void connection::on_recv_cmd(command& cmd)
 					{
 						if (e->current_chid == chid)
 						{
-							e_entity("join", std::move(e));
+							e_entity(event::join, std::move(e));
 						}
 					}
 
 				}
 			}
 
+		}
+		else if (cmd[0] == "info")
+		{
+			send_command(fmt::format("sc -mute {} -silent {}\n", (int)plat_get_global_mute(), (int)plat_get_global_silent()));
 		}
 		else if (cmd[0] == "s")
 		{
@@ -176,9 +181,9 @@ void connection::on_recv_cmd(command& cmd)
 					plat_delete_vr(mic);
 				mic = plat_create_vr();
 				mic->callback = [=](AudioFrame* f)
-					{
-						on_mic_pack(f);
-					};
+				{
+					on_mic_pack(f);
+				};
 			}
 			else
 			{
@@ -214,6 +219,26 @@ void connection::on_recv_cmd(command& cmd)
 					client_set_global_silent(entity_state.is_silent(), false);
 				}
 			}
+			else
+			{
+				if (!entities.count(u)) return;
+				auto e = entities[u];
+				if (cmd.n_opt_val("-mute"))
+				{
+					int s = stru64(cmd.option("-mute"));
+					e->entity_state.man_mute = (s & 1);
+					e->entity_state.mute = (s >> 1);
+					e_entity(event::mute, std::move(e));
+				}
+				if (cmd.n_opt_val("-silent"))
+				{
+					int s = stru64(cmd.option("-silent"));
+					e->entity_state.man_silent = (s & 1);
+					e->entity_state.silent = (s >> 1);
+					e_entity(event::silent, std::move(e));
+				}
+
+			}
 		}
 	}
 }
@@ -231,7 +256,7 @@ int connection::clean_up()
 		i.second = nullptr;
 	}
 	entities.clear();
-	e_server("left", this);
+	e_server(event::left, this);
 	return 0;
 }
 void connection::on_mic_pack(AudioFrame* f)
@@ -275,7 +300,7 @@ void connection::channel_switch(uint32_t from, uint32_t to)
 	if (channels.count(to))
 	{
 		current = channels[to];
-		e_channel("join", std::move(current));
+		e_channel(event::join, std::move(current));
 		for (auto i : current->entities)
 		{
 			if (i->suid != suid)
@@ -298,7 +323,7 @@ void channel::erase(entity* e)
 	}
 	if (op && chid == conn->current->chid && conn->status == connection::state::established)
 	{
-		e_entity("left", std::move(e));
+		e_entity(event::left, std::move(e));
 		e->remove_playback();
 	}
 }
@@ -316,7 +341,7 @@ void channel::erase(uint32_t suid)
 	}
 	if (e && chid == conn->current->chid && conn->status == connection::state::established)
 	{
-		e_entity("left", std::move(e));
+		e_entity(event::left, std::move(e));
 		//sapi_say(fmt::format("'{}'已离开频道", e->name));
 		e->remove_playback();
 	}
@@ -353,6 +378,7 @@ void connection::set_client_volume(uint32_t suid, float vol, bool save)
 		conf_set_uc_volume(host, suid, vol);
 	if (!entities.count(suid)) return;
 	entities[suid]->set_volume(vol);
+	e_entity(event::volume_change, std::move(entities[suid]));
 }
 float connection::get_client_volume(uint32_t suid)
 {
@@ -366,6 +392,7 @@ void connection::set_client_mute(uint32_t suid, bool mute, bool save)
 		conf_set_uc_mute(host, suid, mute);
 	if (!entities.count(suid)) return;
 	entities[suid]->set_mute(mute);
+	e_client(event::mute_user, std::move(entities[suid]));
 }
 bool connection::get_client_mute(uint32_t suid)
 {
@@ -472,80 +499,14 @@ entity::~entity()
 {
 	remove_playback();
 }
-using namespace native;
-download_pool c_dp;
-void client_check_update()
-{
-	namespace fs = std::filesystem;
-	printf("正在检查更新...");
-	auto t = download_task("https://gaazar.cc/gagatalk/version.json", [](download_pool::task_status s, download_task* t)
-		{
-			if (s == download_pool::task_status::finished)
-			{
-				std::string sutf8(t->data, t->data + t->size);
-				//auto ws = sutil::s2w(sutf8, CP_UTF8);
-				json j = json::parse(sutf8);
-				auto lv = j["latest"].as_integer();
-				auto url = j["download"].as_string();
-				printf("OK\n");
-				if (lv > BUILD_SEQ)
-				{
-					auto dt = download_task(url, "Update.pak",
-						[](download_pool::task_status s, download_task* t)
-						{
-							printf("Update package download status:%d\n", s);
-							if (s == download_pool::task_status::finished)
-							{
-								client_uninit();
-								SHELLEXECUTEINFO ShExecInfo = { 0 };
-								ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-								ShExecInfo.fMask = SEE_MASK_DEFAULT;
-								ShExecInfo.hwnd = NULL;
-								ShExecInfo.lpVerb = L"runas";
-								ShExecInfo.lpFile = L"Update.exe";
-								ShExecInfo.lpParameters = L"";
-								ShExecInfo.lpDirectory = NULL;
-								ShExecInfo.nShow = SW_SHOW;
-								ShExecInfo.hInstApp = NULL;
-								ShellExecuteEx(&ShExecInfo);
-								exit(80);
-							}
-						});
-					if (j["log"].is_string())
-					{
-						printf("更新日志:\n%s\n", sutil::w2s(sutil::s2w(j["log"].as_string(), CP_UTF8)).c_str());
-					}
-					printf("正在下载更新...\n");
-					c_dp.join_task(&dt);
-				}
-				else
-					printf("已经是最新版本。\n");
-				if (fs::exists("./temp/Update.exe"))
-				{
-					std::this_thread::sleep_for(std::chrono::seconds(3));
-					std::error_code ec;
-					fs::remove("./Update.exe", ec);
-					if (ec) printf("UpdateError:%s at remove raw\n", ec.message().c_str());
-					ec.clear();
-					fs::copy("./temp/Update.exe", "./Update.exe", ec);
-					if (ec) printf("UpdateError:%s at copy \n", ec.message().c_str());
-					ec.clear();
-					fs::remove("./temp/Update.exe", ec);
-					if (ec) printf("UpdateError:%s at remove new\n", ec.message().c_str());
-				}
-			}
-			else
-				printf("\n无法检测更新信息。\n");
-		});
-	c_dp.join_task(&t);
-}
 void client_set_global_mute(bool m, bool broadcast)
 {
 	auto server = client_get_current_server();
 	plat_set_global_mute(m);
 	conf_set_global_mute(m);
-	if (client_get_current_server())
-		e_entity("mute", std::move(server->entities[server->suid]));
+	//if (client_get_current_server())
+	//	e_entity(event::mute, std::move(server->entities[server->suid]));
+	e_client(event::mute, &m);
 
 	if (server && broadcast)
 	{
@@ -559,7 +520,9 @@ void client_set_global_silent(bool s, bool broadcast)
 	auto server = client_get_current_server();
 	plat_set_global_silent(s);
 	conf_set_global_silent(s);
-	e_entity("silent", std::move(server->entities[server->suid]));
+	//if (client_get_current_server())
+	//	e_entity(event::silent, std::move(server->entities[server->suid]));
+	e_client(event::silent, &s);
 	if (server && broadcast)
 	{
 		server->entity_state.silent = s;
@@ -567,6 +530,7 @@ void client_set_global_silent(bool s, bool broadcast)
 		server->send_command(cmd);
 	}
 }
+
 int client_uninit()
 {
 	for (auto& i : connections)
@@ -578,7 +542,7 @@ int client_uninit()
 	sapi_uninit();
 	platform_uninit();
 	configs_uninit();
-	
+
 	discard = true;
 	c_th_heartbeat.detach();
 	return 0;

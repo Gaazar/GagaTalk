@@ -19,7 +19,7 @@
 typedef int SOCKET;
 typedef sockaddr_in SOCKADDR_IN;
 #endif
-#define VERSION_SEQ 4
+#define VERSION_SEQ 5
 struct instance;
 extern bool terminated;
 //typedef std::unordered_set<std::string> pm_set;

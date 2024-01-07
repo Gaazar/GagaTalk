@@ -5,7 +5,7 @@
 #include <iostream>
 #include <configor/json.hpp>
 #include "web.h"
-
+#include "events.h"
 #include "logger.h"
 
 #pragma comment(lib,"opus.lib")
@@ -319,6 +319,144 @@ void shell_man()
 		}
 	}
 }
+void shell_event_client(event t, void* data)
+{
+	switch (t)
+	{
+	case event::join:
+		break;
+	case event::left:
+		break;
+	case event::mute:
+		printf("闭麦：%s\n", *(bool*)data ? "是" : "否");
+		break;
+	case event::silent:
+		printf("静音：%s\n", *(bool*)data ? "是" : "否");
+		break;
+	case event::auth:
+		break;
+	case event::input_change:
+		if (data)
+		{
+			std::vector<audio_device> d;
+			plat_enum_input_device(d);
+			for (auto& i : d)
+			{
+				if (i.id == (char*)data)
+					printf("输入设备切换为：%s\n", i.name.c_str());
+			}
+		}
+		else
+		{
+			printf("输入设备切换为：默认\n");
+		}
+		break;
+	case event::output_change:
+		if (data)
+		{
+			std::vector<audio_device> d;
+			plat_enum_output_device(d);
+			for (auto& i : d)
+			{
+				if (i.id == (char*)data)
+					printf("输出设备切换为：%s\n", i.name.c_str());
+			}
+		}
+		else
+		{
+			printf("输出设备切换为：默认\n");
+		}
+		break;
+	case event::volume_change:
+		printf("总音量：%f\n", *(float*)data);
+		break;
+	case event::mute_user:
+	{
+		auto e = (entity*)data;
+		bool b = e->entity_state.silent || e->entity_state.man_silent || e->get_mute();
+		if (b)
+		{
+			printf("用户%s(%u)静音：是(", e->name.c_str(), e->suid);
+			if (e->get_mute())
+				printf("本地 ");
+			if (e->entity_state.silent)
+				printf("主动 ");
+			if (e->entity_state.man_silent)
+				printf("服务器 ");
+			printf(")\n");
+		}
+		else
+		{
+			printf("用户%s(%u)静音：否\n", e->name.c_str(), e->suid);
+
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+void shell_event_entity(event t, entity* e)
+{
+	switch (t)
+	{
+	case event::join:
+		break;
+	case event::left:
+		break;
+	case event::mute:
+	{
+		bool b = e->entity_state.mute || e->entity_state.man_mute;
+		if (b)
+		{
+			printf("用户%s(%u)闭麦：是(", e->name.c_str(), e->suid);
+			if (e->entity_state.mute)
+				printf("主动 ");
+			if (e->entity_state.man_mute)
+				printf("服务器 ");
+			printf(")\n");
+		}
+		else
+		{
+			printf("用户%s(%u)闭麦：否\n", e->name.c_str(), e->suid);
+
+		}
+		break;
+	}
+	case event::silent:
+	{
+		bool b = e->entity_state.silent || e->entity_state.man_silent || e->get_mute();
+		if (b)
+		{
+			printf("用户%s(%u)静音：是(", e->name.c_str(), e->suid);
+			if (e->get_mute())
+				printf("本地 ");
+			if (e->entity_state.silent)
+				printf("主动 ");
+			if (e->entity_state.man_silent)
+				printf("服务器 ");
+			printf(")\n");
+		}
+		else
+		{
+			printf("用户%s(%u)静音：否\n", e->name.c_str(), e->suid);
+
+		}
+		break;
+	}
+	case event::auth:
+		break;
+	case event::input_change:
+		break;
+	case event::output_change:
+		break;
+	case event::volume_change:
+		printf("用户%s(%u)的音量：%f\n", e->name.c_str(), e->suid, e->get_volume());
+		break;
+	default:
+		break;
+	}
+}
 int shell_main()
 {
 	//log_i(nullptr, nullptr);
@@ -363,6 +501,8 @@ int shell_main()
 	{
 		printf("\t%s: %s\n", i.name.c_str(), i.id.c_str());
 	}
+	e_client += shell_event_client;
+	e_entity += shell_event_entity;
 	print_usage();
 	char ch;
 	command_buffer cb;
@@ -405,15 +545,15 @@ int shell_main()
 				{
 					plat_set_input_device("");
 					conf_set_input_device(nullptr);
-					printf("success set to default\n");
+					//printf("success set to default\n");
 				}
 				else if (plat_set_input_device(cmd[1]))
 				{
 					conf_set_input_device(&cmd[1]);
-					printf("success\n");
+					//printf("success\n");
 				}
 				else
-					printf("failed\n");
+					printf("操作失败\n");
 			}
 			else if (cmd[0] == "cvo")
 			{
@@ -421,15 +561,14 @@ int shell_main()
 				{
 					plat_set_output_device("");
 					conf_set_output_device(nullptr);
-					printf("success set to default\n");
 				}
 				else if (plat_set_output_device(cmd[1]))
 				{
 					conf_set_output_device(&cmd[1]);
-					printf("success\n");
+					//printf("success\n");
 				}
 				else
-					printf("failed\n");
+					printf("操作失败\n");
 
 			}
 			else if (cmd[0] == "vio")
@@ -440,13 +579,13 @@ int shell_main()
 			{
 				bool m = !plat_get_global_mute();
 				client_set_global_mute(m);
-				printf("%s\n", m ? "mute" : "not mute");
+				//printf("%s\n", m ? "mute" : "not mute");
 			}
 			else if (cmd[0] == "ss")
 			{
 				bool s = !plat_get_global_silent();
 				client_set_global_silent(s);
-				printf("%s\n", s ? "silent" : "not silent");
+				//printf("%s\n", s ? "silent" : "not silent");
 			}
 			else if (cmd[0] == "vm")
 			{
@@ -519,7 +658,7 @@ int shell_main()
 						continue;
 					}
 					c->set_client_volume(suid, percent_to_db(stru64(cmd[2]) / 100.f));
-					printf("OK\n");
+					//printf("OK\n");
 
 				}
 				else if (cmd[0] == "m")
@@ -541,7 +680,7 @@ int shell_main()
 						continue;
 					}
 					c->set_client_mute(suid, !c->get_client_mute(suid));
-					printf("OK\n");
+					//printf("OK\n");
 
 				}
 				else if (cmd[0] == "j")

@@ -293,22 +293,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				int n = ~IDM_AUDIN & wmId;
 				bool s = plat_set_input_device(tr_ai[n].id);
 				conf_set_input_device(&tr_ai[n].id);
-				printf("输入设备切换为：%s\n", tr_ai[n].name.c_str());
-				if (s)
-					printf("成功\n");
-				else
-					printf("失败\n");
+
 			}
 			else if (wmId & IDM_AUDOUT)
 			{
 				int n = ~IDM_AUDOUT & wmId;
 				bool s = plat_set_output_device(tr_ao[n].id);
 				conf_set_output_device(&tr_ao[n].id);
-				printf("输出设备切换为：%s\n", tr_ao[n].name.c_str());
-				if (s)
-					printf("成功\n");
-				else
-					printf("失败\n");
 			}
 			else
 				return DefWindowProc(hwnd, message, wParam, lParam);
@@ -355,9 +346,9 @@ void thread_message()
 	HWND hwnd = CreateWindow(L"GagaTalk", L"嘎嘎乱喊", WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, 0, 250, 200, NULL, NULL, tr_hinst, NULL);
 	tr_hwnd = hwnd;
-	e_channel += [](std::string t, channel* e)
+	e_channel += [](event t, channel* e)
 	{
-		if (t == "join")
+		if (t == event::join)
 		{
 			auto b = ModifyNotificationIcon(tr_hwnd, fmt::format("服务器：{}\n频道：{}", e->conn->name, e->name));
 		}

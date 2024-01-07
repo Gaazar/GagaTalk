@@ -15,19 +15,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\GagaTalk\gt_defs.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="db.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="server.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\GagaTalk\sql.h">
+    <ClInclude Include="permissions.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="permissions.h">
+    <ClInclude Include="gt_defs.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="sql.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

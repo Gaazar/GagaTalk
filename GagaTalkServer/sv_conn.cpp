@@ -101,9 +101,10 @@ void connection::on_recv_cmd(command& cmd)
 			server->db_get_role_server(this);
 			send_channel_list();//cd
 			send_clients_list();//rd
+			send_cmd("info\n");
 			{
-				std::lock_guard<std::mutex> g(server->m_conn);
-				join_channel(1);
+				//std::lock_guard<std::mutex> g(server->m_conn);
+				//join_channel(1);
 
 			}//auto bcmd = fmt::format("rd {} -n {} -c {}\n", suid, esc_quote(name), current_chid);
 			//server->broadcast(bcmd.c_str(), bcmd.length(), this);
@@ -151,7 +152,8 @@ void connection::on_recv_cmd(command& cmd)
 		if (narg)
 		{
 			ss << "\n";
-			server->channels[current_chid]->broadcast_cmd(ss.str(), this);
+			if (current_chid)
+				server->channels[current_chid]->broadcast_cmd(ss.str(), this);
 		}
 	}
 }

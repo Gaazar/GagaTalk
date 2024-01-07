@@ -7,7 +7,7 @@
 #include <opus/opus.h>
 #include <functional>
 
-#define BUILD_SEQ 18 
+#define BUILD_SEQ 19
 struct debug_state
 {
 	uint32_t npak_ad_inv = 0;
@@ -44,6 +44,7 @@ struct entity : RemoteClientDesc
 {
 	voice_playback* playback = nullptr;
 	connection* conn = nullptr;
+	client_state entity_state;
 	uint32_t n_pak = 0;
 	float get_volume();
 	float set_volume(float);
@@ -147,8 +148,10 @@ bool plat_get_global_mute();
 bool plat_get_global_silent();
 bool plat_enum_input_device(std::vector<audio_device>& ls);
 bool plat_enum_output_device(std::vector<audio_device>& ls);
+
 void client_set_global_mute(bool m, bool broadcast = true);
 void client_set_global_silent(bool m, bool broadcast = true);
+
 void sapi_set_volume(int v);
 void sapi_set_rate(int r);
 int sapi_init();

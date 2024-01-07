@@ -18,6 +18,9 @@
 #include <mutex>
 #include "audio_process.h"
 #include "native_util.hpp"
+#include <configor/json.hpp>
+#include <filesystem>
+#include "events.h"
 
 #pragma comment(lib,"opus.lib")
 #pragma comment(lib,"avrt.lib")
@@ -391,6 +394,10 @@ bool plat_set_input_device(std::string devid)
 		p_indev_id = devid;
 		if (p_recorder)
 			p_recorder->change_devices(p_indev_id);
+		if (devid.empty())
+			e_client(event::input_change, nullptr);
+		else
+			e_client(event::input_change, (void*)devid.c_str());
 		return true;
 	}
 	return false;
@@ -418,6 +425,10 @@ bool plat_set_output_device(std::string devid)
 				i->change_device(p_outdev_id);
 			}
 		}
+		if (devid.empty())
+			e_client(event::output_change, nullptr);
+		else
+			e_client(event::output_change, (void*)devid.c_str());
 		return true;
 	}
 	return false;
@@ -715,6 +726,8 @@ float entity::set_volume(float v)
 }
 bool entity::get_mute()
 {
+	if (!playback)
+		return plat_get_global_silent();
 	return playback->get_mute();
 }
 bool entity::set_mute(bool m)
@@ -942,9 +955,9 @@ void enable_voice_loopback()
 		p_rec_lb_ref = plat_create_vr();
 
 		p_rec_lb_ref->callback = [](AudioFrame* f)
-			{
-				p_pb_loopback->post_audio_frame(f);
-			};
+		{
+			p_pb_loopback->post_audio_frame(f);
+		};
 	}
 }
 void disable_voice_loopback()
@@ -966,7 +979,7 @@ bool plat_set_filter(std::string filter)
 float plat_set_global_volume(float db)
 {
 	p_master_mul = db_to_mul(db);
-
+	e_client(event::volume_change, &db);
 	return db;
 }
 bool plat_set_global_mute(bool m)
@@ -1082,4 +1095,73 @@ int platform_uninit()
 	socket_uninit();
 	::CoUninitialize();
 	return 0;
+}
+
+using namespace native;
+using namespace configor;
+download_pool c_dp;
+void client_check_update()
+{
+	namespace fs = std::filesystem;
+	printf("正在检查更新...");
+	auto t = download_task("https://gaazar.cc/gagatalk/version.json", [](download_pool::task_status s, download_task* t)
+		{
+			if (s == download_pool::task_status::finished)
+			{
+				std::string sutf8(t->data, t->data + t->size);
+				//auto ws = sutil::s2w(sutf8, CP_UTF8);
+				json j = json::parse(sutf8);
+				auto lv = j["latest"].as_integer();
+				auto url = j["download"].as_string();
+				printf("OK\n");
+				if (lv > BUILD_SEQ)
+				{
+					auto dt = download_task(url, "Update.pak",
+						[](download_pool::task_status s, download_task* t)
+						{
+							printf("Update package download status:%d\n", s);
+					if (s == download_pool::task_status::finished)
+					{
+						client_uninit();
+						SHELLEXECUTEINFO ShExecInfo = { 0 };
+						ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+						ShExecInfo.fMask = SEE_MASK_DEFAULT;
+						ShExecInfo.hwnd = NULL;
+						ShExecInfo.lpVerb = L"runas";
+						ShExecInfo.lpFile = L"Update.exe";
+						ShExecInfo.lpParameters = L"";
+						ShExecInfo.lpDirectory = NULL;
+						ShExecInfo.nShow = SW_SHOW;
+						ShExecInfo.hInstApp = NULL;
+						ShellExecuteEx(&ShExecInfo);
+						exit(80);
+					}
+						});
+					if (j["log"].is_string())
+					{
+						printf("更新日志:\n%s\n", sutil::w2s(sutil::s2w(j["log"].as_string(), CP_UTF8)).c_str());
+					}
+					printf("正在下载更新...\n");
+					c_dp.join_task(&dt);
+				}
+				else
+					printf("已经是最新版本。\n");
+				if (fs::exists("./temp/Update.exe"))
+				{
+					std::this_thread::sleep_for(std::chrono::seconds(3));
+					std::error_code ec;
+					fs::remove("./Update.exe", ec);
+					if (ec) printf("UpdateError:%s at remove raw\n", ec.message().c_str());
+					ec.clear();
+					fs::copy("./temp/Update.exe", "./Update.exe", ec);
+					if (ec) printf("UpdateError:%s at copy \n", ec.message().c_str());
+					ec.clear();
+					fs::remove("./temp/Update.exe", ec);
+					if (ec) printf("UpdateError:%s at remove new\n", ec.message().c_str());
+				}
+			}
+			else
+				printf("\n无法检测更新信息。\n");
+		});
+	c_dp.join_task(&t);
 }

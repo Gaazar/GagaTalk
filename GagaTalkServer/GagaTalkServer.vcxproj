@@ -141,11 +141,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\GagaTalk\gt_defs.h" />
-    <ClInclude Include="..\GagaTalk\sql.h" />
     <ClInclude Include="db.h" />
+    <ClInclude Include="gt_defs.h" />
     <ClInclude Include="permissions.h" />
     <ClInclude Include="server.h" />
+    <ClInclude Include="sql.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\GagaTalk\sqlite\sqlite3.c" />

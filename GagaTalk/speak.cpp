@@ -118,38 +118,38 @@ int sapi_init()
 	if (pf.length())
 		sapi_set_profile(pf);
 
-	e_server += [](std::string t, connection* c)
+	e_server += [](event t, connection* c)
 	{
 		if (!c) return;
-		if (t == "join")
+		if (t == event::join)
 		{
 			sapi_say(fmt::format("已加入服务器'{}'。", c->host));
 		}
-		else if (t == "auth")
+		else if (t == event::auth)
 		{
 
 		}
-		else if (t == "left")
+		else if (t == event::left)
 		{
 			sapi_say(fmt::format("已离开服务器'{}'。", c->host));
 		}
 	};
-	e_channel += [](std::string t, channel* c)
+	e_channel += [](event t, channel* c)
 	{
 		if (!c) return;
-		if (t == "join")
+		if (t == event::join)
 		{
 			sapi_say(fmt::format("已加入频道'{}'", c->name));
 		}
 	};
-	e_entity += [](std::string t, entity* e)
+	e_entity += [](event t, entity* e)
 	{
 		if (!e) return;
-		if (t == "join")
+		if (t == event::join)
 		{
 			sapi_say(fmt::format("‘{}’已加入频道。", e->name));
 		}
-		else if (t == "left")
+		else if (t == event::left)
 		{
 			sapi_say(fmt::format("‘{}’已离开频道。", e->name));
 		}

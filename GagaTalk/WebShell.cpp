@@ -1,16 +1,22 @@
 #define CROW_STATIC_DIRECTORY "dist/"
 #include <configor/json.hpp>
 #include <crow.h>
+#include <crow/middlewares/cors.h>
 #include "web.h"
 #include <filesystem>
 #include "client.h"
 void webapp_thread(int port);
-crow::SimpleApp* web_app = nullptr;
+typedef crow::App<crow::CORSHandler> WebUI;
+WebUI* web_app = nullptr;
 std::thread web_th;
 int web_init(int port)
 {
-	web_app = new crow::SimpleApp();
-	crow::SimpleApp& app = *web_app;
+	web_app = new WebUI;
+	auto& app = *web_app;
+	auto& cors = app.get_middleware<crow::CORSHandler>();
+	cors
+		.global()
+		.origin("https://gagarun.chat");
 	CROW_ROUTE(app, "/")([]() {
 		crow::response response;
 	response.set_static_file_info("./dist/index.html");
@@ -37,14 +43,35 @@ int web_init(int port)
 	response.write(res.dump());
 	return response;
 		});
-	CROW_ROUTE(app, "/api/server/join/")([]() {
+	CROW_ROUTE(app, "/api/server/connect/").methods("POST"_method)([]() {
 		crow::response response;
+	response.set_header("Content-Type", "application/json");
 
 	return response;
 		});
+	CROW_ROUTE(app, "/api/server/disconnect/").methods("POST"_method)([]() {
+		crow::response response;
+	response.set_header("Content-Type", "application/json");
+
+	return response;
+		});
+	CROW_ROUTE(app, "/api/client/volume/").methods("POST"_method)([]() {
+		crow::response response;
+	response.set_header("Content-Type", "application/json");
+
+	return response;
+		});
+	CROW_ROUTE(app, "/api/server/ioms/").methods("POST"_method)([]() {
+		crow::response response;
+	response.set_header("Content-Type", "application/json");
+
+	return response;
+		});
+
 	/*
 	CROW_ROUTE(app, "/api/")([]() {
 		crow::response response;
+	response.set_header("Content-Type", "application/json");
 
 		return response;
 		});
