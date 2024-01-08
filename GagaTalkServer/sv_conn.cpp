@@ -185,7 +185,7 @@ void connection::send_clients_list()
 	for (auto& kv : server->connections)
 	{
 		auto i = kv.second;
-		if (i->suid != suid)
+		if (i->suid != suid && i->current_chid)
 			ss << fmt::format("rd {} -n {} -c {}\n",
 				i->suid, esc_quote(i->name), i->current_chid);
 	}
