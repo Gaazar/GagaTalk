@@ -81,11 +81,13 @@
     <LinkIncremental>true</LinkIncremental>
     <ExternalIncludePath>$(INCLUDE);$(ExternalIncludePath)</ExternalIncludePath>
     <LibraryPath>F:\libs\bin\debug;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <ExternalIncludePath>$(INCLUDE);$(ExternalIncludePath)</ExternalIncludePath>
     <LibraryPath>F:\libs\bin\release;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32328.378
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GagaTalk", "GagaTalk\GagaTalk.vcxproj", "{9C3D35A4-7C98-471F-903D-94BFFCC2B8AB}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GagaTalk", "src\GagaTalk.vcxproj", "{9C3D35A4-7C98-471F-903D-94BFFCC2B8AB}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GagaTalkServer", "GagaTalkServer\GagaTalkServer.vcxproj", "{C382B156-C261-40E2-BD31-1E3DB11AD9E3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GagaTalkServer", "src\GagaTalkServer.vcxproj", "{C382B156-C261-40E2-BD31-1E3DB11AD9E3}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Update", "Update\Update.vcxproj", "{6D286448-9284-4898-A74D-5E4399F86BB9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Update", "src\Update.vcxproj", "{6D286448-9284-4898-A74D-5E4399F86BB9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

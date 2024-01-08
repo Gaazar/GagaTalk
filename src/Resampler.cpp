@@ -108,3 +108,32 @@ float Resampler::GetEstimateDelay()
 {
 	return  buffer_len / (float)output_format.sampleRate * 500.f;
 }
+#define PI 3.1415926f
+float sinc(float t)
+{
+	if (t == 0) return 0;
+	return sinf(t * PI) / (t * PI);
+}
+
+SincResample::SincResample(uint32_t i_sr, uint32_t o_sr, uint32_t filter_size) : sr_i(i_sr), sr_o(o_sr), sz_filter(filter_size)
+{
+	ratio = ((float)sr_o) / sr_i;
+}
+SincResample::~SincResample()
+{
+	in_buf.Release();
+	out_buf.Release();
+}
+bool SincResample::Input(AudioFrame& f)
+{
+	int hf = sz_filter / 2;
+	return true;
+}
+uint32_t SincResample::Output(AudioFrame* f)
+{
+	return 0;
+}
+float SincResample::GetEstimateDelay()
+{
+	return 0;
+}

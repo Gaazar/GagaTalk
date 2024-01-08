@@ -91,7 +91,22 @@ public:
 	uint32_t Output(AudioFrame* f);
 	float GetEstimateDelay();
 };
+class SincResample : public IAudioFrameProcessor
+{
+	uint32_t sr_i;
+	uint32_t sr_o;
+	uint32_t sz_filter;
+	float ratio;
+	AudioFrame in_buf;
+	AudioFrame out_buf;
+public:
+	SincResample(uint32_t i_sr, uint32_t o_sr, uint32_t filter_size = 80);
+	~SincResample();
+	bool Input(AudioFrame& f);
+	uint32_t Output(AudioFrame* f);
+	float GetEstimateDelay();
 
+};
 class RNNDenoise : public IAudioFrameProcessor
 {
 	void* ctx = nullptr;
