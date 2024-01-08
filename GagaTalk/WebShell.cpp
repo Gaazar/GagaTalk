@@ -16,7 +16,7 @@ int web_init(int port)
 	auto& cors = app.get_middleware<crow::CORSHandler>();
 	cors
 		.global()
-		.origin("https://gagarun.chat");
+		.origin("https://gagarun.chat,http:127.0.0.1:10709");
 	CROW_ROUTE(app, "/")([]() {
 		crow::response response;
 	response.set_static_file_info("./dist/index.html");
