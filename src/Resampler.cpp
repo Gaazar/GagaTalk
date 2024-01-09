@@ -118,20 +118,30 @@ float sinc(float t)
 SincResample::SincResample(uint32_t i_sr, uint32_t o_sr, uint32_t filter_size) : sr_i(i_sr), sr_o(o_sr), sz_filter(filter_size)
 {
 	ratio = ((float)sr_o) / sr_i;
+	//l.Allocate(sz_filter / 2);
 }
 SincResample::~SincResample()
 {
-	in_buf.Release();
-	out_buf.Release();
+	//l.Release();
+	//b.Release();
+	//out.Release();
 }
 bool SincResample::Input(AudioFrame& f)
 {
-	int hf = sz_filter / 2;
+	//int hf = sz_filter / 2;
+	//if (f.nSamples < sz_filter)
+	//{
+	//	memcpy(in_buf.samples + 
+	//	return true;
+	//}
+	//out.Allocate(f.nSamples - sz_filter);
 	return true;
 }
 uint32_t SincResample::Output(AudioFrame* f)
 {
-	return 0;
+	//if (out_aval)
+	//	f->Allocate(out_buf.nSamples, out_buf.samples, out_buf.nChannel);
+	return out_aval;
 }
 float SincResample::GetEstimateDelay()
 {

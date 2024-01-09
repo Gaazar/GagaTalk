@@ -41,9 +41,6 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Socks.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="server.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -53,11 +50,16 @@
     <ClCompile Include="sv_man.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="sv_socket.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Makefile" />
     <Text Include="Permission.txt">
       <Filter>头文件</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Makefile" />
   </ItemGroup>
 </Project>
