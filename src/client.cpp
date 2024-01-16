@@ -270,12 +270,13 @@ void connection::on_mic_pack(AudioFrame* f)
 {
 	unsigned char buf[1480];
 	((uint32_t*)buf)[0] = ssid;
+	((uint32_t*)buf)[1] = suid;
 	//c_fa_mic_t.Input(*f);
 	//AudioFrame a;
 	//while (c_fa_mic_t.Output(&a))
 	{
 		//f = &a;
-		int len = opus_encode_float(aud_enc, f->samples, f->nSamples, &buf[4], 1480 - 4);
+		int len = opus_encode_float(aud_enc, f->samples, f->nSamples, &buf[8], 1480 - 8);
 		if (len > 1)
 		{
 			//printf("dtx opus\n");

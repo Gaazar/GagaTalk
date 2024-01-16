@@ -39,16 +39,16 @@ int instance::start(const char* dbn)
 		db, sql.c_str(), [this](_map& kv)
 		{
 			channel* c = new channel();
-			c->chid = std::strtoul(kv["chid"].c_str(), nullptr, 10);
-			c->name = kv["name"];
-			c->parent = std::strtoul(kv["parent"].c_str(), nullptr, 10);
-			c->owner = std::strtoul(kv["owner"].c_str(), nullptr, 10);
-			c->description = kv["desc"];
-			c->capacity = std::strtoul(kv["capacity"].c_str(), nullptr, 10);
-			c->privilege = kv["privilege"];
-			c->session_id = randu32();
-			c->inst = this;
-			channels[c->chid] = c; },
+	c->chid = std::strtoul(kv["chid"].c_str(), nullptr, 10);
+	c->name = kv["name"];
+	c->parent = std::strtoul(kv["parent"].c_str(), nullptr, 10);
+	c->owner = std::strtoul(kv["owner"].c_str(), nullptr, 10);
+	c->description = kv["desc"];
+	c->capacity = std::strtoul(kv["capacity"].c_str(), nullptr, 10);
+	c->privilege = kv["privilege"];
+	c->session_id = randu32();
+	c->inst = this;
+	channels[c->chid] = c; },
 		db_msg);
 	sk_lsn = socket(AF_INET, SOCK_STREAM, 0);
 	if (!sk_lsn)
@@ -167,19 +167,23 @@ int instance::voip_recv_thread()
 		if (*(uint32_t*)buffer != 0)
 		{
 			uint32_t ssid = *(uint32_t*)buffer;
-			uint32_t suid = 0;
+			uint32_t suid = *(uint32_t*)&buffer[4];
 			connection* conn = nullptr;
-			for (auto& cli : connections)
+			if (connections.count(suid))
 			{
-				if (cmpsaddr(&from, &cli.second->addr))
+				conn = connections[suid];
+				if (!cmpsaddr(&from, &conn->addr))
 				{
+					conn->addr = from;
 					// if (*(uint32_t *)buffer != (cli->suid & 0xffffffff))
 					//     return 0;
-					if (!cli.second->state.man_mute)
-						suid = cli.second->suid;
-					conn = cli.second;
-					break;
 				}
+				if (conn->state.man_mute)
+					suid = 0;
+			}
+			else
+			{
+				suid = 0;
 			}
 			if (suid)
 			{
@@ -189,6 +193,7 @@ int instance::voip_recv_thread()
 					if (cn.second->session_id == ssid)
 					{
 						*(uint32_t*)buffer = suid;
+						*(uint32_t*)&buffer[4] = (uint32_t)conn->stts.cm_tx;
 						conn->stts.vo_tx += len;
 						cn.second->broadcast_voip_pak(buffer, len, suid);
 						break;

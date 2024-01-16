@@ -30,12 +30,12 @@
     <ClInclude Include="sql.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="sqlite\sqlite3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="db.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\GagaTalk\sqlite\sqlite3.c">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
@@ -51,6 +51,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="sv_socket.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite\sqlite3.c">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

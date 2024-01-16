@@ -79,10 +79,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>F:\Learn\VS\GagaTalk\GagaTalk;$(INCLUDE);$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>F:\Learn\VS\GagaTalk\GagaTalk;$(INCLUDE);$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -146,12 +148,13 @@
     <ClInclude Include="permissions.h" />
     <ClInclude Include="server.h" />
     <ClInclude Include="sql.h" />
+    <ClInclude Include="sqlite\sqlite3.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\GagaTalk\sqlite\sqlite3.c" />
     <ClCompile Include="db.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="server.cpp" />
+    <ClCompile Include="sqlite\sqlite3.c" />
     <ClCompile Include="sv_conn.cpp" />
     <ClCompile Include="sv_man.cpp" />
     <ClCompile Include="sv_socket.cpp" />

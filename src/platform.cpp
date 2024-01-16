@@ -696,14 +696,14 @@ void connection::on_recv_voip_pack(const char* buffer, int len)
 4byte:	suid
 ...		payload
 */
-	if (len < 4) return;
+	if (len < 8) return;
 	uint32_t rid = *(uint32_t*)buffer;
 	if (entities.count(rid))
 	{
 		if (entities[rid]->playback)
 		{
 			std::lock_guard<std::mutex> g(p_m_cd);
-			entities[rid]->playback->post_opus_pack(buffer + 4, len - 4);
+			entities[rid]->playback->post_opus_pack(buffer + 8, len - 8);
 			entities[rid]->n_pak++;
 		}
 		else
