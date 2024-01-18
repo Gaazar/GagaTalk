@@ -464,7 +464,7 @@ void instance::mp_mute(command& cmd, connection* conn)
 	if (cmd.has_option("-s"))
 		cn->state.man_mute = m;
 	else
-		cn->state.mute = m;
+		cn->state.mute |= m;
 	std::stringstream css;
 	css << "sc " << u;
 	cn->state.cg_mute(css) << "\n";
@@ -511,7 +511,7 @@ void instance::mp_silent(command& cmd, connection* conn)
 	if (cmd.has_option("-s"))
 		cn->state.man_silent = m;
 	else
-		cn->state.silent = m;
+		cn->state.silent |= m;
 	std::stringstream css;
 	css << "sc " << u;
 	cn->state.cg_silent(css) << "\n";

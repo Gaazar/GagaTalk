@@ -390,6 +390,14 @@ bool plat_set_input_device(std::string devid)
 	delete wd;
 	if (d)
 	{
+		IAudioClient* ac = nullptr;
+		if (d->Activate(
+			__uuidof(IAudioClient),
+			CLSCTX_ALL,
+			NULL,
+			(void**)&ac));
+		if (!ac) return false;
+		ac->Release();
 		d->Release();
 		p_indev_id = devid;
 		if (p_recorder)
@@ -416,6 +424,14 @@ bool plat_set_output_device(std::string devid)
 	delete wd;
 	if (d)
 	{
+		IAudioClient* ac = nullptr;
+		if (d->Activate(
+			__uuidof(IAudioClient),
+			CLSCTX_ALL,
+			NULL,
+			(void**)&ac));
+		if (!ac) return false;
+		ac->Release();
 		d->Release();
 		p_outdev_id = devid;
 		for (auto& i : p_playbacks)
@@ -467,7 +483,7 @@ HRESULT CreateAudioClient(IMMDevice* pDevice, IAudioClient** ppAudioClient, DWOR
 		CLSCTX_ALL,
 		NULL,
 		(void**)&pAudioClient));
-
+	if (hr != S_OK) return hr;
 	// Get the device format.
 	CHECK_HR(hr = pAudioClient->GetMixFormat(&pwfx));
 
@@ -574,8 +590,10 @@ int voice_playback::create_devices(std::string device_id)
 {
 	IMMDevice* pEndpoint = NULL;
 	HRESULT hr = 0;
+	bool is_default = true;
 	if (device_id.length())
 	{
+		is_default = false;
 		wchar_t* wcs;
 		a2w(device_id.c_str(), device_id.length(), &wcs);
 		hr = p_dev_enum->GetDevice(wcs, &pEndpoint);
@@ -584,6 +602,7 @@ int voice_playback::create_devices(std::string device_id)
 	else
 		hr = p_dev_enum->GetDefaultAudioEndpoint(eRender, eMultimedia, &pEndpoint);
 	hr = CreateAudioClient(pEndpoint, &aud_cli);
+
 	aud_cli->GetMixFormat(&wfmt);
 	rsmplr = new  Resampler(48000, wfmt->nSamplesPerSec);
 	uint32_t fsz = ceilf(wfmt->nSamplesPerSec * 0.01f);
