@@ -269,8 +269,8 @@ int connection::clean_up()
 void connection::on_mic_pack(AudioFrame* f)
 {
 	unsigned char buf[1480];
-	((uint32_t*)buf)[0] = ssid;
-	((uint32_t*)buf)[1] = suid;
+	((uint32_t*)buf)[0] = suid;
+	((uint32_t*)buf)[1] = ssid;
 	//c_fa_mic_t.Input(*f);
 	//AudioFrame a;
 	//while (c_fa_mic_t.Output(&a))
@@ -280,7 +280,8 @@ void connection::on_mic_pack(AudioFrame* f)
 		if (len > 1)
 		{
 			//printf("dtx opus\n");
-			send_voip_pack((const char*)buf, len + 4);
+			edcrypt_voip_pack((char*)buf, len + 8, cert);
+			send_voip_pack((const char*)buf, len + 8);
 		}
 		//a.Release();
 	}

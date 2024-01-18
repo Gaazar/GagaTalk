@@ -151,6 +151,7 @@
     <ClInclude Include="sqlite\sqlite3.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="common.cpp" />
     <ClCompile Include="db.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="server.cpp" />

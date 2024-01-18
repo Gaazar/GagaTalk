@@ -97,12 +97,13 @@ class SincResample : public IAudioFrameProcessor
 	uint32_t sr_o;
 	uint32_t sz_filter;
 	float ratio;
-	bool out_aval = false;
-	uint32_t nsBuf = 0;
+	uint32_t nOut = false;
+	uint32_t nRight = 0;
+	uint32_t hf = 0;
 
 	float* sLeft = nullptr;
-	float* sBuffer = nullptr;
-	float* sOut = nullptr;
+	float* sRight = nullptr;
+	std::vector<float> out;
 
 public:
 	SincResample(uint32_t i_sr, uint32_t o_sr, uint32_t filter_size = 80);

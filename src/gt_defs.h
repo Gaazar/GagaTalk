@@ -424,6 +424,7 @@ public:
 	}
 
 };
+int edcrypt_voip_pack(char* buf, int sz, uint32_t cert);
 
 inline uint64_t stru64(std::string s)
 {

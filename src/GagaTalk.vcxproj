@@ -152,6 +152,7 @@
     <ClCompile Include="audio_process.cpp" />
     <ClCompile Include="client.cpp" />
     <ClCompile Include="CliShell.cpp" />
+    <ClCompile Include="common.cpp" />
     <ClCompile Include="configs.cpp" />
     <ClCompile Include="FrameAligner.cpp" />
     <ClCompile Include="GagaTalk.cpp" />

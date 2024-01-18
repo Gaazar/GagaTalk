@@ -6,7 +6,7 @@ TARGET  = gts_build
 OBJ_DIR = ./objs
 SRC_DIR = ./src
 
-CPP = db.cpp server.cpp sv_conn.cpp sv_man.cpp sv_socket.cpp main.cpp
+CPP = db.cpp server.cpp sv_conn.cpp sv_man.cpp sv_socket.cpp main.cpp common.cpp
 SRC = $(addprefix $(SRC_DIR)/,$(CPP))
 OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, %.o, $(SRC))
  
@@ -33,8 +33,7 @@ dep : $(TARGET)
 	rm -f build/gts
 	mv build/$(TARGET) build/gts
 run : dep
-	cd build
-	nohup stdbuf -i0 -o0 -e0 ./gts > latest.log 2>&1 &
+	cd build && nohup stdbuf -i0 -o0 -e0 ./gts > latest.log 2>&1 &
 .PHONY : clean
 clean:
 	rm -rf $(TARGET) $(OBJ_DIR)/*.o ./*.o

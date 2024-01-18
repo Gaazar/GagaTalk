@@ -149,7 +149,7 @@ int instance::listen_thread()
 
 			conn_verifing.push_back(conn);
 			auto ip = inet_ntoa(caddr.sin_addr);
-			printf("[I]: Connection[%d] established from %s:%d\n", sk_conn, ip, caddr.sin_port);
+			printf("[I]: Connection[%lld] established from %s:%d\n", sk_conn, ip, caddr.sin_port);
 		}
 	}
 	return 0;
@@ -166,40 +166,45 @@ int instance::voip_recv_thread()
 			continue;
 		if (*(uint32_t*)buffer != 0)
 		{
-			uint32_t ssid = *(uint32_t*)buffer;
-			uint32_t suid = *(uint32_t*)&buffer[4];
+			uint32_t suid = *((uint32_t*)&buffer);
+			uint32_t ssid = 0;
 			connection* conn = nullptr;
 			if (connections.count(suid))
 			{
 				conn = connections[suid];
+				edcrypt_voip_pack(buffer, len, conn->cert_code);
+				ssid = *((uint32_t*)&buffer[4]);
+				if (!channels.count(conn->current_chid) && channels[conn->current_chid]->session_id != ssid)
+				{
+					continue;
+				}
 				if (!cmpsaddr(&from, &conn->addr))
 				{
 					conn->addr = from;
+					printf("[I]: Connection[%lld] voip address changed to %s:%d", conn->sk_cmd, inet_ntoa(from.sin_addr), from.sin_port);
 					// if (*(uint32_t *)buffer != (cli->suid & 0xffffffff))
 					//     return 0;
 				}
 				if (conn->state.man_mute)
-					suid = 0;
+					continue;
 			}
 			else
 			{
-				suid = 0;
+				continue;
 			}
-			if (suid)
+			for (auto& cn : channels)
 			{
-				for (auto& cn : channels)
+				conn->stts.last_ssid = ssid;
+				if (cn.second->session_id == ssid)
 				{
-					conn->stts.last_ssid = ssid;
-					if (cn.second->session_id == ssid)
-					{
-						*(uint32_t*)buffer = suid;
-						*(uint32_t*)&buffer[4] = (uint32_t)conn->stts.cm_tx;
-						conn->stts.vo_tx += len;
-						cn.second->broadcast_voip_pak(buffer, len, suid);
-						break;
-					}
+					*(uint32_t*)buffer = suid;
+					*(uint32_t*)&buffer[4] = (uint32_t)conn->stts.cm_tx;
+					conn->stts.vo_tx += len;
+					cn.second->broadcast_voip_pak(buffer, len, suid);
+					break;
 				}
 			}
+
 		}
 		else if (len == 16)
 		{
