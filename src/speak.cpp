@@ -141,6 +141,10 @@ int sapi_init()
 		{
 			sapi_say(fmt::format("已加入频道'{}'", c->name));
 		}
+		else if (t == event::left)
+		{
+			sapi_say(fmt::format("已离开频道'{}'", c->name));
+		}
 	};
 	e_entity += [](event t, entity* e)
 	{

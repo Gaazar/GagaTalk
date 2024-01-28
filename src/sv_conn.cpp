@@ -19,8 +19,6 @@ void connection::release()
 	discard = true;
 	if (suid)
 	{
-		auto c = fmt::format("rd {} -l\n", suid);
-		server->broadcast(c.c_str(), c.length(), this);
 		join_channel(0);
 		server->connections.erase(suid);
 		//server->conn_verifing.push_back(this);
@@ -51,7 +49,7 @@ void connection::on_recv_cmd(command& cmd)
 		send_cmd("pong\n");
 	}
 	else
-		printf("[C:%d][%s]\n", sk_cmd, cmd.str().c_str());
+		printf("[C:%lld][%s]\n", sk_cmd, cmd.str().c_str());
 	if (cmd[0] == "hs")
 	{
 		if (cmd.n_args() < 3)
@@ -119,8 +117,28 @@ void connection::on_recv_cmd(command& cmd)
 			return;
 		auto chid = stru64(cmd[1]);
 		std::lock_guard<std::mutex> g(server->m_conn);
+		if (chid == 0)
+		{
+			join_channel(0);
+			return;
+		}
 		if (!server->channels.count(chid))
 			return;
+		if (!permission("join", chid))
+		{
+			send_cmd(fmt::format("rej j -m 'permission denied: join'\n"));
+			return;
+		}
+		if (cmd.has_option("-mon"))
+		{
+			if (!permission("monitor", chid))
+			{
+				send_cmd(fmt::format("rej j -m 'permission denied: monitor'\n"));
+				return;
+			}
+
+			return;
+		}
 		join_channel(chid);
 		//auto bcmd = fmt::format("rd {} -c {}\n", suid, chid);
 		//server->broadcast(bcmd.c_str(), bcmd.length());
@@ -233,17 +251,18 @@ int connection::recv_cmd_thread()
 		else
 		{
 			// std::lock_guard<std::mutex> g(server->m_conn);
-			printf("[I]: Connection[%d] closed.\n", sk_cmd);
+			printf("[I]: Connection[%lld] closed.\n", sk_cmd);
 			release();
 			return 1;
 		}
 	}
 	return 0;
 }
-void connection::join_channel(uint32_t chid)
+void connection::join_channel(uint32_t chid, bool mon)
 {
 	std::string cmd;
 	chid_t befor = 0;
+	monitoring = mon;
 	if (current_chid != chid)
 	{
 		if (server->channels.count(current_chid))
@@ -264,6 +283,7 @@ void connection::join_channel(uint32_t chid)
 		if (chid == 0)
 		{
 			current_chid = 0;
+			server->broadcast(fmt::format("rd {} -l\n", suid));
 			return;
 		}
 		cert_code = randu32();

@@ -218,9 +218,9 @@ int instance::db_get_roles()
 					c.clear();
 				}
 			}
-			if (s.permissions.count("channel.owner"))
+			if (s.permissions.count("server.default"))
 			{
-				cb.append(owner_channel_role.c_str(), owner_channel_role.length());
+				cb.append(default_server_role.c_str(), default_server_role.length());
 				while (cb.parse(c) > 0)
 				{
 					if (c.n_args())
@@ -255,9 +255,9 @@ int instance::db_get_roles()
 					s.permissions.insert(c[0]);
 				c.clear();
 			}
-			if (s.permissions.count("server.owner"))
+			if (s.permissions.count("channel.default"))
 			{
-				cb.append(owner_server_role.c_str(), owner_server_role.length());
+				cb.append(default_channel_role.c_str(), default_channel_role.length());
 				while (cb.parse(c) > 0)
 				{
 					if (c.n_args())

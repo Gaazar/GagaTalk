@@ -741,7 +741,9 @@ float entity::get_volume()
 }
 float entity::set_volume(float v)
 {
-	return playback->set_volume(v);
+	if (playback)
+		return playback->set_volume(v);
+	return 0.0f;
 }
 bool entity::get_mute()
 {

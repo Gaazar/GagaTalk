@@ -19,7 +19,7 @@
 typedef int SOCKET;
 typedef sockaddr_in SOCKADDR_IN;
 #endif
-#define VERSION_SEQ 6
+#define VERSION_SEQ 7
 struct instance;
 extern bool terminated;
 //typedef std::unordered_set<std::string> pm_set;
@@ -55,6 +55,7 @@ struct connection : RemoteClientDesc
 	int activated = 0;
 	bool discard = false;
 	client_state state;
+	bool monitoring = false;
 	statistics stts;
 	connection();
 	void on_recv_cmd(command& cmd);
@@ -66,7 +67,7 @@ struct connection : RemoteClientDesc
 	void send_clients_list();
 	//void send_channel_info();
 	void send_clients_info();
-	void join_channel(uint32_t chid);
+	void join_channel(uint32_t chid, bool mon = false);
 	std::stringstream& cg_state(std::stringstream& ss);//cg = command generation, arguments
 	bool permission(std::string name);
 	bool permission(std::string name, chid_t chid);

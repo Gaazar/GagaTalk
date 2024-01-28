@@ -46,6 +46,7 @@ text\n\
 text.whisper\n\
 role.keygen\n\
 join\n\
+monitor\n\
 ";
 static std::string default_server_role =
 "\
@@ -65,6 +66,7 @@ grant.channel.role\n\
 speak\n\
 text\n\
 join\n\
+monitor\n\
 ";
 static std::string default_channel_role =
 "\

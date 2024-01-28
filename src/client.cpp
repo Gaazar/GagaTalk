@@ -330,9 +330,12 @@ void channel::erase(entity* e)
 			break;
 		}
 	}
-	if (op && chid == conn->current->chid && conn->status == connection::state::established)
+	if (op && conn->current && chid == conn->current->chid && conn->status == connection::state::established)
 	{
-		e_entity(event::left, std::move(e));
+		if (e->suid == conn->suid)
+			e_channel(event::left, std::move(this));
+		else
+			e_entity(event::left, std::move(e));
 		e->remove_playback();
 	}
 }
