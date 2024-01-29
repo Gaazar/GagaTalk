@@ -138,7 +138,7 @@ struct voice_recorder : Ivoice_recorder
 		hr = CreateAudioClient(pEndpoint, &aud_cli);
 		aud_cli->GetMixFormat(&wfmt);
 		rsmplr = new Resampler(wfmt->nSamplesPerSec, 48000);
-		//fa = FrameAligner(480);
+		//fa = FrameAligner(5760);
 		if (wfmt->nChannels != 1)
 		{
 			printf("Multiple channel microphone is not supported yet, channel 1 will be used.\n");
@@ -607,7 +607,7 @@ int voice_playback::create_devices(std::string device_id)
 	rsmplr = new  Resampler(48000, wfmt->nSamplesPerSec);
 	uint32_t fsz = ceilf(wfmt->nSamplesPerSec * 0.01f);
 	if (fsz != fa.GetFrameSize())
-		fa = FrameAligner(fsz);
+		fa.Resize(fsz);
 	hev = CreateEvent(nullptr, false, false, nullptr);
 	hr = aud_cli->SetEventHandle(hev);
 	hr = aud_cli->GetService(IID_PPV_ARGS(&aud_out));
@@ -694,12 +694,12 @@ int voice_playback::play_thread()
 
 			hr = aud_out->ReleaseBuffer(f.nSamples, 0);
 			assert(hr == S_OK);
-			f.Release();
 		}
 		else
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			std::this_thread::sleep_for(std::chrono::milliseconds(8));
 		}
+		f.Release();
 	}
 	aud_cli->Stop();
 	aud_out->Release();
@@ -723,7 +723,7 @@ void connection::on_recv_voip_pack(const char* buffer, int len)
 		{
 			std::lock_guard<std::mutex> g(p_m_cd);
 			entities[rid]->playback->post_opus_pack(buffer + 8, len - 8);
-			entities[rid]->n_pak++;
+			entities[rid]->n_pak += len;
 		}
 		else
 		{
@@ -735,6 +735,12 @@ void connection::on_recv_voip_pack(const char* buffer, int len)
 
 
 }
+void connection::set_netopt_paksz(uint32_t paksz)
+{
+	std::lock_guard<std::mutex> g(p_m_rec_ref);
+	fa_netopt.Resize(paksz);
+}
+
 float entity::get_volume()
 {
 	return playback->get_volume();

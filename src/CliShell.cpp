@@ -457,6 +457,27 @@ void shell_event_entity(event t, entity* e)
 		break;
 	}
 }
+void shell_sub_netopt(command& cmd)
+{
+	auto c = client_get_current_server();
+	if (cmd.n_args() > 0)
+	{
+		if (cmd[0] == "pakf")
+		{
+			if (cmd.n_args() < 2) return;
+			int ms = stru64(cmd[1]);
+			if (ms != 10 && ms % 20 != 0 || ms < 10 || ms > 120) return;
+			c->set_netopt_paksz(ms * 48);
+			printf("OK\n");
+		}
+	}
+	else
+	{
+		printf("pakf <10|20|40|60|80|100|120> 数据包帧长\n");
+		printf("buff <1-64> 缓冲长度，数字越大延迟越高（默认16）\n");
+	}
+
+}
 int shell_main()
 {
 	//log_i(nullptr, nullptr);
@@ -713,6 +734,12 @@ int shell_main()
 				{
 
 				}
+				else if (cmd[0] == "netopt")
+				{
+					cmd.remove_head();
+					shell_sub_netopt(cmd);
+				}
+
 			}
 			print_head();
 		}

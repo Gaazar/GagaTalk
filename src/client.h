@@ -7,7 +7,7 @@
 #include <opus/opus.h>
 #include <functional>
 
-#define BUILD_SEQ 21
+#define BUILD_SEQ 22
 struct debug_state
 {
 	uint32_t npak_ad_inv = 0;
@@ -85,6 +85,7 @@ struct connection :ServerDesc
 	OpusEncoder* aud_enc;
 	uint32_t ping_pong = 0;
 	client_state entity_state;
+	FrameAligner fa_netopt;
 	enum class state
 	{
 		disconnect = 0,
@@ -120,6 +121,7 @@ struct connection :ServerDesc
 	void set_client_mute(uint32_t suid, bool mute, bool save = true);
 	bool get_client_mute(uint32_t suid);
 	void tick();
+	void set_netopt_paksz(uint32_t paksz);
 
 };
 int client_init();

@@ -101,6 +101,11 @@ void connection::on_recv_cmd(command& cmd)
 				entities.erase(suid);
 				auto c = e->current_chid;
 				channels[c]->erase(e);
+				if (suid == this->suid)
+				{
+					this->chid = 0;
+					this->current = nullptr;
+				}
 				delete e;
 			}
 			else
@@ -271,11 +276,11 @@ void connection::on_mic_pack(AudioFrame* f)
 	unsigned char buf[1480];
 	((uint32_t*)buf)[0] = suid;
 	((uint32_t*)buf)[1] = ssid;
-	//c_fa_mic_t.Input(*f);
-	//AudioFrame a;
-	//while (c_fa_mic_t.Output(&a))
+	fa_netopt.Input(*f);
+	AudioFrame frame;
+	while (fa_netopt.Output(&frame))
 	{
-		//f = &a;
+		f = &frame;
 		int len = opus_encode_float(aud_enc, f->samples, f->nSamples, &buf[8], 1480 - 8);
 		if (len > 1)
 		{
@@ -283,7 +288,7 @@ void connection::on_mic_pack(AudioFrame* f)
 			edcrypt_voip_pack((char*)buf, len + 8, cert);
 			send_voip_pack((const char*)buf, len + 8);
 		}
-		//a.Release();
+		frame.Release();
 	}
 }
 void connection::join_channel(uint32_t chid)

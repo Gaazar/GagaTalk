@@ -57,7 +57,8 @@ public:
 	FrameAligner(uint32_t target_frame_size, uint32_t channel_count = 1);
 	FrameAligner(const FrameAligner& f);
 	FrameAligner(FrameAligner&& f) noexcept;
-	FrameAligner& operator =(const FrameAligner& f);
+	//FrameAligner& operator =(const FrameAligner& f);
+	void Resize(uint32_t target_frame_size, uint32_t channel_count = 1);
 	~FrameAligner();
 	bool Input(AudioFrame& f);
 	uint32_t Output(AudioFrame* f);

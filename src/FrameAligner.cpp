@@ -34,13 +34,22 @@ FrameAligner::FrameAligner(FrameAligner&& f) noexcept
 	buffer = f.buffer;
 	f.buffer = nullptr;
 }
-FrameAligner& FrameAligner::operator =(const FrameAligner& f)
+//FrameAligner& FrameAligner::operator =(const FrameAligner& f)
+//{
+//	nBuffered = 0;
+//	nChannel = f.nChannel;
+//	target_size = f.target_size;
+//	buffer = new float[target_size * nChannel];
+//	return *this;
+//}
+void FrameAligner::Resize(uint32_t target_frame_size, uint32_t channel_count)
 {
+	if (buffer) delete[] buffer;
 	nBuffered = 0;
-	nChannel = f.nChannel;
-	target_size = f.target_size;
+	nChannel = channel_count;
+	target_size = target_frame_size;
 	buffer = new float[target_size * nChannel];
-	return *this;
+
 }
 bool FrameAligner::Input(AudioFrame& in_f)
 {

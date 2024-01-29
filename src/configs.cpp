@@ -140,7 +140,7 @@ int create_structure()
 	r = sqlite3_exec(db, sql, [&](int cnt, char** v, char** k)->int
 		{
 			c = atoi(*v);
-			return 0;
+	return 0;
 		}, &err_msg);
 
 	if (c == 0)
@@ -198,14 +198,14 @@ int conf_get_servers(std::vector<server_info>& s)
 	auto hr = sqlite3_exec(db, sql, [&](_cmap& kv)
 		{
 			server_info si;
-			si.hostname = kv["address"];
-			si.name = kv["name"];
-			si.suid = stru64(kv["suid"]);
-			auto x = kv["icon"];
-			if (x) si.icon = x;
-			x = kv["token"];
-			if (x) si.token = x;
-			s.push_back(si);
+	si.hostname = kv["address"];
+	si.name = kv["name"];
+	si.suid = stru64(kv["suid"]);
+	auto x = kv["icon"];
+	if (x) si.icon = x;
+	x = kv["token"];
+	if (x) si.token = x;
+	s.push_back(si);
 		}, &emsg);
 	assert(!hr);
 	return 0;
@@ -233,10 +233,11 @@ int conf_get_server(server_info* s) //fill hostname and others will be filled.
 #if defined(_DEBUG) && defined(_RAND)
 		srand(time(nullptr));
 		s->suid = std::to_string(randu32());// kv["suid"];
+		s->name = "DEBUG: " + s->suid;
 #else
 		s->suid = kv["suid"];
-#endif
 		s->name = kv["name"];
+#endif
 		s->hostname = kv["address"];
 		s->icon = kv["icon"];
 		s->token = kv["token"];
