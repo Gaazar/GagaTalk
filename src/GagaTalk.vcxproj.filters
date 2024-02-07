@@ -113,6 +113,12 @@
     <ClInclude Include="web.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="cli.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="pipe_stream.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="GagaTalk.rc">

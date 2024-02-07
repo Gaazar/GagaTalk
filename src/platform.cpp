@@ -697,7 +697,7 @@ int voice_playback::play_thread()
 		}
 		else
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(8));
+			std::this_thread::sleep_for(std::chrono::milliseconds(17));
 		}
 		f.Release();
 	}
@@ -723,11 +723,12 @@ void connection::on_recv_voip_pack(const char* buffer, int len)
 		{
 			std::lock_guard<std::mutex> g(p_m_cd);
 			entities[rid]->playback->post_opus_pack(buffer + 8, len - 8);
-			entities[rid]->n_pak += len;
+			entities[rid]->debug_state.nb_pak_recv += len;
+			entities[rid]->debug_state.n_pak_recv++;
 		}
 		else
 		{
-			debugger.npak_pb_null++;
+			debug_state.n_null_pb++;
 			//printf("empty playback at on_recv_voip_pack\n");
 			//(*((int*)0)) = 0;
 		}
@@ -998,6 +999,20 @@ void disable_voice_loopback()
 	}
 
 }
+bool toggle_voice_loopback()
+{
+	if (p_pb_loopback)
+	{
+		disable_voice_loopback();
+		return false;
+	}
+	else
+	{
+		enable_voice_loopback();
+		return true;
+	}
+}
+
 bool plat_set_filter(std::string filter)
 {
 	if (!p_recorder) return false;
@@ -1130,7 +1145,7 @@ download_pool c_dp;
 void client_check_update()
 {
 	namespace fs = std::filesystem;
-	printf("正在检查更新...");
+	//printf("正在检查更新...");
 	auto t = download_task("https://gaazar.cc/gagatalk/version.json", [](download_pool::task_status s, download_task* t)
 		{
 			if (s == download_pool::task_status::finished)
@@ -1140,7 +1155,7 @@ void client_check_update()
 				json j = json::parse(sutf8);
 				auto lv = j["latest"].as_integer();
 				auto url = j["download"].as_string();
-				printf("OK\n");
+				//printf("OK\n");
 				if (lv > BUILD_SEQ)
 				{
 					auto dt = download_task(url, "Update.pak",

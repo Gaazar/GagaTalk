@@ -171,12 +171,14 @@
   <ItemGroup>
     <ClInclude Include="AudioDevices.h" />
     <ClInclude Include="audio_process.h" />
+    <ClInclude Include="cli.h" />
     <ClInclude Include="client.h" />
     <ClInclude Include="delegate.h" />
     <ClInclude Include="events.h" />
     <ClInclude Include="IAudioFrameProcessor.h" />
     <ClInclude Include="logger.h" />
     <ClInclude Include="native_util.hpp" />
+    <ClInclude Include="pipe_stream.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="RingQueue.h" />
     <ClInclude Include="gt_defs.h" />

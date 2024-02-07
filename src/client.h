@@ -6,14 +6,18 @@
 #include "RingQueue.h"
 #include <opus/opus.h>
 #include <functional>
-
+#include "cli.h"
 #define BUILD_SEQ 22
-struct debug_state
+struct debug_info
 {
-	uint32_t npak_ad_inv = 0;
-	uint32_t npak_pb_null = 0;
+	uint32_t n_pak_recv = 0;
+	uint32_t nb_pak_recv = 0;
+	uint32_t n_pak_sent = 0;
+	uint32_t nb_pak_sent = 0;
+	uint32_t n_null_pb = 0;
+	uint32_t n_pak_err_enc = 0;
+	remote_shell* shell = nullptr;
 };
-extern debug_state debugger;
 struct connection;
 struct audio_device
 {
@@ -45,7 +49,7 @@ struct entity : RemoteClientDesc
 	voice_playback* playback = nullptr;
 	connection* conn = nullptr;
 	client_state entity_state;
-	uint32_t n_pak = 0;
+	debug_info debug_state;
 	float get_volume();
 	float set_volume(float);
 	bool get_mute();
@@ -85,6 +89,7 @@ struct connection :ServerDesc
 	OpusEncoder* aud_enc;
 	uint32_t ping_pong = 0;
 	client_state entity_state;
+	debug_info debug_state;
 	FrameAligner fa_netopt;
 	enum class state
 	{
@@ -207,6 +212,7 @@ connection* client_get_current_server(); //return hostname:port
 
 void enable_voice_loopback();
 void disable_voice_loopback();
+bool toggle_voice_loopback();
 
 uint64_t randu64();
 uint32_t randu32();

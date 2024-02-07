@@ -143,10 +143,7 @@ int connection::connect(const char* host, uint16_t port)//sync
 				int len = recvfrom(plat->sk_voip, buffer, 1536, 0, (sockaddr*)&from, &salen);
 				if (from.sin_addr.S_un.S_addr == plat->addr_server.sin_addr.S_un.S_addr)
 					on_recv_voip_pack(buffer, len);
-				else
-				{
-					debugger.npak_ad_inv++;
-				}
+
 			}
 			return 0;
 

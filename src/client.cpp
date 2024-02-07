@@ -19,7 +19,6 @@ delegate<void(event type, entity* entity)> e_entity;
 delegate<void(event type, void* data)> e_client;
 
 std::thread c_th_heartbeat;
-debug_state debugger;
 
 
 //FrameAligner c_fa_mic_t(480 * 6);
@@ -206,9 +205,9 @@ void connection::on_recv_cmd(command& cmd)
 		}
 		else if (cmd[0] == "dp")
 		{
-			for (int i = 1; i < cmd.n_args(); i++)
+			//for (int i = 1; i < cmd.n_args(); i++)
 			{
-				printf("%s\n", cmd[i].c_str());
+				printf("%s", cmd.token(1).c_str());
 			}
 		}
 		else if (cmd[0] == "sc")
@@ -252,6 +251,31 @@ void connection::on_recv_cmd(command& cmd)
 
 			}
 		}
+		else if (cmd[0] == "rdc")
+		{
+			if (cmd.n_args() < 3) return;
+			suid_t dest = stru64(cmd[2]);
+			if (cmd[1] == "open")
+			{
+				if (!debug_state.shell)
+					debug_state.shell = new remote_shell(this, dest);
+			}
+			else if (cmd[1] == "close")
+			{
+				if (debug_state.shell)
+					delete debug_state.shell;
+				debug_state.shell = nullptr;
+
+			}
+		}
+		else if (cmd[0] == "rdd")
+		{
+			if (cmd.n_args() < 2) return;
+			if (debug_state.shell)
+			{
+				debug_state.shell->input(cmd[1]);
+			}
+		}
 	}
 }
 int connection::clean_up()
@@ -287,6 +311,12 @@ void connection::on_mic_pack(AudioFrame* f)
 			//printf("dtx opus\n");
 			edcrypt_voip_pack((char*)buf, len + 8, cert);
 			send_voip_pack((const char*)buf, len + 8);
+			debug_state.nb_pak_sent += len + 8;
+			debug_state.n_pak_sent++;
+		}
+		else if (len < 1)
+		{
+			debug_state.n_pak_err_enc++;
 		}
 		frame.Release();
 	}

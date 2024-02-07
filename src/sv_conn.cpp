@@ -17,6 +17,7 @@ void connection::release()
 	if (discard)
 		return;
 	discard = true;
+	release_debug();
 	if (suid)
 	{
 		join_channel(0);
@@ -39,6 +40,29 @@ void connection::release()
 	addr.sin_port = 0;
 	server = nullptr;
 	th_cmd.detach();
+}
+void connection::release_debug()
+{
+	if (debug.act == suid)
+	{
+		if (server->connections.count(debug.pas))
+		{
+			server->connections[debug.pas]->debug.act = 0;
+			server->connections[debug.pas]->debug.pas = 0;
+			server->connections[debug.pas]->send_cmd(fmt::format("rdc close {}\n", debug.act));
+		}
+	}
+	else
+	{
+		if (server->connections.count(debug.act))
+		{
+			server->connections[debug.act]->debug.act = 0;
+			server->connections[debug.act]->debug.pas = 0;
+		}
+		send_cmd(fmt::format("rdc close {}\n", debug.act));
+	}
+	debug.act = 0;
+	debug.pas = 0;
 }
 void connection::on_recv_cmd(command& cmd)
 {
@@ -173,6 +197,62 @@ void connection::on_recv_cmd(command& cmd)
 			if (current_chid)
 				server->channels[current_chid]->broadcast_cmd(ss.str(), this);
 		}
+	}
+	else if (cmd[0] == "rdc")
+	{
+		if (!permission("remote.command", current_chid))
+		{
+			send_cmd(fmt::format("rej rc -m 'permission denied: remote.command'\n"));
+			return;
+		}
+		if (cmd.n_args() < 3)
+		{
+			send_cmd(fmt::format("rej rc -m 'arg mism'\n"));
+			return;
+		}
+		suid_t s = stru64(cmd[2]);
+		if (cmd[1] == "open")
+		{
+			if (debug.act || debug.pas)
+			{
+				send_cmd(fmt::format("rej rc -m 'already in remote'\n"));
+				return;
+			}
+			if (!server->connections.count(s))
+			{
+				send_cmd(fmt::format("rej rc -m 'user not exist'\n"));
+				return;
+			}
+			if(s == suid)
+			{
+				send_cmd(fmt::format("rej rc -m 'yourself'\n"));
+				return;
+			}
+			connection* pas = server->connections[s];
+			debug.act = suid;
+			debug.pas = s;
+			pas->debug = debug;
+			pas->send_cmd(fmt::format("rdc open {}\n", suid));
+		}
+		else if (cmd[1] == "close")
+		{
+			release_debug();
+		}
+	}
+	else if (cmd[0] == "rdd")
+	{
+		if (!debug.pas || !debug.act)
+			return;
+		suid_t t = ((debug.pas == suid) ? debug.act : debug.pas);
+		if (!server->connections.count(t))
+		{
+			release_debug();
+			return;
+		}
+		if (t == debug.act)
+			server->connections[t]->send_cmd(fmt::format("dp {}\n", escape(cmd.token(1))));
+		else
+			server->connections[t]->send_cmd(cmd.str() + "\n");
 	}
 }
 int connection::send_cmd(std::string s)
@@ -359,12 +439,14 @@ std::stringstream& connection::debug_output(std::stringstream& ss)
 		"suid:\t" << suid << "\n" <<
 		"name:\t" << name << "\n" <<
 		"channel:\t" << current_chid << "\n" <<
-		"channel ssid:\t" << server->channels[current_chid]->session_id << "\n" <<
+		"channel ssid:\t" << (current_chid ? server->channels[current_chid]->session_id : 0) << "\n" <<
 		"cert:\t" << cert_code << "\n" <<
 		"voice:\n" <<
 		"\tport:\t" << addr.sin_port << "\n" <<
-		"\ttx:" << stts.vo_tx << "\trx:" << stts.vo_rx << "\n" <<
+		"\ttx:" << stts.vo_tx_np << "\t" << stts.vo_tx_nb << "\n\trx:" << stts.vo_rx_np << "\t" << stts.vo_rx_nb << "\n" <<
 		"\tlast ssid:\t" << stts.last_ssid << "\n"
 		;
+	ss << "remote debug:" <<
+		"\tact:" << debug.act << "\tpas:" << debug.pas << "\n";
 	return ss;
 }

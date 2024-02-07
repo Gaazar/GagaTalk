@@ -7,6 +7,7 @@
 #include "client.h"
 #include <windows.h>
 #include "DbgHelp.h"
+#include <sstream>
 
 #pragma comment(lib,"opus.lib")
 #pragma comment(lib,"avrt.lib")
@@ -54,7 +55,8 @@ LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS lpExceptionInfo)
 
 int main()
 {
-	SetUnhandledExceptionFilter(ExceptionFilter); 
+	SetUnhandledExceptionFilter(ExceptionFilter);
+
 	WCHAR cwd[512];
 	GetCurrentDirectory(512, cwd);
 	std::wcout << cwd << std::endl;

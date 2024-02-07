@@ -38,10 +38,17 @@ enum class r
 struct statistics
 {
 	uint64_t time_enter = 0;
-	uint64_t vo_tx = 0, vo_rx = 0; //tx = client's sent receive by server; rx = server sent to client
+	uint64_t vo_tx_np = 0, vo_rx_np = 0; //tx = client's sent receive by server; rx = server sent to client
+	uint64_t vo_tx_nb = 0, vo_rx_nb = 0;
 	uint64_t cm_tx = 0, cm_rx = 0;
 	uint32_t last_ssid = 0;
 	uint16_t cmd_port = 0;
+};
+struct debug_field
+{
+	suid_t act = 0;
+	suid_t pas = 0;
+
 };
 struct connection : RemoteClientDesc
 {
@@ -57,12 +64,14 @@ struct connection : RemoteClientDesc
 	client_state state;
 	bool monitoring = false;
 	statistics stts;
+	debug_field debug;
 	connection();
 	void on_recv_cmd(command& cmd);
 	int send_cmd(std::string s);
 	int send_buffer(const char* buf, int sz);
 	int recv_cmd_thread();
 	void release();
+	void release_debug();
 	void send_channel_list();
 	void send_clients_list();
 	//void send_channel_info();

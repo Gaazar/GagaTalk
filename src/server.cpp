@@ -181,7 +181,7 @@ int instance::voip_recv_thread()
 				if (!cmpsaddr(&from, &conn->addr))
 				{
 					conn->addr = from;
-					printf("[I]: Connection[%lld] voip address changed to %s:%d", conn->sk_cmd, inet_ntoa(from.sin_addr), from.sin_port);
+					printf("[I]: Connection[%lld] voip address changed to %s:%d\n", conn->sk_cmd, inet_ntoa(from.sin_addr), from.sin_port);
 					// if (*(uint32_t *)buffer != (cli->suid & 0xffffffff))
 					//     return 0;
 				}
@@ -199,7 +199,8 @@ int instance::voip_recv_thread()
 				{
 					*(uint32_t*)buffer = suid;
 					*(uint32_t*)&buffer[4] = (uint32_t)conn->stts.cm_tx;
-					conn->stts.vo_tx += len;
+					conn->stts.vo_tx_nb += len;
+					conn->stts.vo_tx_np++;
 					cn.second->broadcast_voip_pak(buffer, len, suid);
 					break;
 				}
@@ -259,7 +260,8 @@ void channel::broadcast_voip_pak(const char* buf, int sz, suid_t sender)
 		{
 			continue;
 		}
-		i->stts.vo_rx += sz;
+		i->stts.vo_rx_nb += sz;
+		i->stts.vo_rx_np++;
 		inst->send_voip(&i->addr, buf, sz);
 	}
 }

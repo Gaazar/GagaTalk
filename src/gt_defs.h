@@ -110,11 +110,9 @@ struct client_state
 		return man_silent || silent;
 	}
 };
-
-static std::string escape(std::string in)
+static std::string escape(const char* in, size_t slen)
 {
 	std::stringstream out;
-	int slen = in.length();
 	int n = 0;
 	for (int i = 0; i < slen; i++)
 	{
@@ -125,12 +123,48 @@ static std::string escape(std::string in)
 		case '\n':
 		case '\'':
 		case '\"':
-		//case '-':
+			//case '-':
 			out << '\\';
 			n++;
 			break;
 
 		default:
+			break;
+		}
+		out << in[i];
+		n++;
+	}
+	return out.str();
+}
+
+static std::string escape(std::string in)
+{
+	std::stringstream out;
+	int slen = in.length();
+	int n = 0;
+	bool bs = true;
+	for (int i = 0; i < slen; i++)
+	{
+		switch (in[i])
+		{
+		case ' ':
+		case '\t':
+			bs = true;
+		case '\n':
+		case '\'':
+		case '\"':
+			//case '-':
+			out << '\\';
+			n++;
+			bs = false;
+			break;
+		//case '-':
+		//	if (bs)
+		//		out << '\\';
+		//	bs = false;
+		//	break;
+		default:
+			bs = false;
 			break;
 		}
 		out << in[i];
@@ -162,6 +196,30 @@ static std::string esc_quote(std::string in)
 	out << '\'';
 	return out.str();
 }
+static std::string esc_quote(std::string in, size_t slen)
+{
+	std::stringstream out; out << "\'";
+	int n = 0;
+	for (int i = 0; i < slen; i++)
+	{
+		switch (in[i])
+		{
+		case '\'':
+		case '\"':
+			out << '\\';
+			n++;
+			break;
+
+		default:
+			break;
+		}
+		out << in[i];
+		n++;
+	}
+	out << '\'';
+	return out.str();
+}
+
 class command
 {
 	friend class command_buffer;
@@ -232,7 +290,11 @@ public:
 		return *args[index];
 
 	}
-
+	std::string& token(uint32_t index)
+	{
+		if (index > tokens.size()) return empty;
+		return tokens[index];
+	}
 	std::string& operator[](uint32_t index)
 	{
 		return *args[index];
@@ -368,11 +430,18 @@ public:
 			if (s[i] == '\'')
 			{
 				quote = (quote & ~0b1) | (~quote & 0b1); //bit flip
+				ign = false;
 				continue;
 			}
 			if (s[i] == '\"')
 			{
 				quote = (quote & ~0b10) | (~quote & 0b10);
+				ign = false;
+				continue;
+			}
+			if (quote)
+			{
+				sstr << s[i];
 				continue;
 			}
 			if (s[i] == '\\')
