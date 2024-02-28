@@ -7,7 +7,7 @@
 #include <opus/opus.h>
 #include <functional>
 #include "cli.h"
-#define BUILD_SEQ 22
+#define BUILD_SEQ 24
 struct debug_info
 {
 	uint32_t n_pak_recv = 0;

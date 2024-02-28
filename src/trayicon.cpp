@@ -25,6 +25,14 @@ class __declspec(uuid("618CA4D0-E67F-436F-B6DE-78994711EE4E")) TrayIcon;
 #define IDM_MUTE 0x302
 #define IDM_SILENT 0x303
 
+#define IDM_VOLUME_0    0x10'0000
+#define IDM_VOLUME_25   0x20'0000
+#define IDM_VOLUME_50   0x40'0000
+#define IDM_VOLUME_75   0x80'0000
+#define IDM_VOLUME_100  0x100'0000
+#define IDM_VOLUME_UP   0x200'0000
+#define IDM_VOLUME_DOWN 0x400'0000
+
 thread tr_th_msg;
 HINSTANCE tr_hinst = 0;
 HWND tr_hwnd = 0;
@@ -106,24 +114,31 @@ BOOL DeleteNotificationIcon()
 	return Shell_NotifyIcon(NIM_DELETE, &nid);
 }
 
-HMENU trm_svr = 0;
-HMENU trm_chan = 0;
-HMENU trm_conf = 0;
-HMENU trm_auddev = 0;
 std::vector<server_info> tr_svrs;
 connection* tr_conn = nullptr;
+std::vector<suid_t> volume_list;
+void FreeMenu();
+struct MenuState
+{
+	HMENU root = 0;
+	HMENU svr = 0;
+	HMENU chan = 0;
+	HMENU conf = 0;
+	HMENU auddev = 0;
+	std::vector<HMENU> ents;
+};
+MenuState tr_menu;
 HMENU MakeMenu()
 {
-	if (trm_svr) DestroyMenu(trm_svr);
-	if (trm_chan) DestroyMenu(trm_chan);
-	if (trm_conf) DestroyMenu(trm_conf);
-	if (trm_auddev) DestroyMenu(trm_auddev);
-
-	HMENU hMenu = CreatePopupMenu();
-	trm_svr = CreatePopupMenu();
-	trm_chan = CreatePopupMenu();
-	trm_conf = CreatePopupMenu();
-	trm_auddev = CreatePopupMenu();
+	if (tr_menu.root)
+	{
+		FreeMenu();
+	}
+	tr_menu.root = CreatePopupMenu();
+	tr_menu.svr = CreatePopupMenu();
+	tr_menu.chan = CreatePopupMenu();
+	tr_menu.conf = CreatePopupMenu();
+	tr_menu.auddev = CreatePopupMenu();
 
 	tr_conn = client_get_current_server();
 	conf_get_servers(tr_svrs);
@@ -133,76 +148,104 @@ HMENU MakeMenu()
 		for (auto& i : tr_svrs)
 		{
 			if (tr_conn && tr_conn->host == i.hostname && tr_conn->status != connection::state::disconnect)
-				AppendMenu(trm_svr, MF_STRING | MF_CHECKED, IDM_SERVER | n, sutil::s2w(i.name, CP_UTF8).c_str());
+				AppendMenu(tr_menu.svr, MF_STRING | MF_CHECKED, IDM_SERVER | n, sutil::s2w(i.name, CP_UTF8).c_str());
 			else
-				AppendMenu(trm_svr, MF_STRING, IDM_SERVER | n, sutil::s2w(i.name, CP_UTF8).c_str());
+				AppendMenu(tr_menu.svr, MF_STRING, IDM_SERVER | n, sutil::s2w(i.name, CP_UTF8).c_str());
 			n++;
 		}
 	}
-	else AppendMenu(trm_svr, MF_STRING | MF_DISABLED, 0, TEXT("无"));
+	else AppendMenu(tr_menu.svr, MF_STRING | MF_DISABLED, 0, TEXT("无"));
 	if (tr_conn && tr_conn->channels.size() > 0)
 	{
 		int n = 0;
 		for (auto& i : tr_conn->channels)
 		{
 			if (tr_conn->current == i.second)
-				AppendMenu(trm_chan, MF_STRING | MF_CHECKED, 0, sutil::s2w(i.second->name).c_str());
+				AppendMenu(tr_menu.chan, MF_STRING | MF_CHECKED, 0, sutil::s2w(i.second->name).c_str());
 			else
-				AppendMenu(trm_chan, MF_STRING, IDM_CHANNEL | n, sutil::s2w(i.second->name).c_str());
+				AppendMenu(tr_menu.chan, MF_STRING, IDM_CHANNEL | n, sutil::s2w(i.second->name).c_str());
 			n++;
 		}
 	}
-	else  AppendMenu(trm_chan, MF_STRING | MF_DISABLED, 0, TEXT("无"));
+	else  AppendMenu(tr_menu.chan, MF_STRING | MF_DISABLED, 0, TEXT("无"));
 
 	//AppendMenu(trm_conf, MF_STRING | MF_DISABLED, 0, TEXT("无"));
 
 	if (tr_conn && tr_conn->status == connection::state::established && tr_conn->current)
 	{
 		int n = 0;
-		AppendMenu(hMenu, MF_STRING, 0, fmt::format(L"频道: {}", sutil::s2w(tr_conn->current->name)).c_str());
+		AppendMenu(tr_menu.root, MF_STRING, 0, fmt::format(L"频道: {}", sutil::s2w(tr_conn->current->name)).c_str());
+
 		for (auto& i : tr_conn->current->entities)
 		{
 			if (i->playback)
-				AppendMenu(hMenu, MF_STRING, IDM_CLIENT | n, sutil::s2w(i->name).c_str());
+			{
+				HMENU ent_v = CreatePopupMenu();
+				tr_menu.ents.push_back(ent_v);
+				volume_list.push_back(i->suid);
+				AppendMenu(ent_v, MF_STRING | MF_DISABLED, 0, (L"音量:" + std::to_wstring(i->get_volume()) + L"dB").c_str());
+				AppendMenu(ent_v, MF_STRING | (i->get_volume() == percent_to_db(0) ? MF_CHECKED : 0), IDM_VOLUME_0 | n, TEXT("0%"));
+				AppendMenu(ent_v, MF_STRING | (i->get_volume() == percent_to_db(0.25f) ? MF_CHECKED : 0), IDM_VOLUME_25 | n, TEXT("25%"));
+				AppendMenu(ent_v, MF_STRING | (i->get_volume() == percent_to_db(0.50f) ? MF_CHECKED : 0), IDM_VOLUME_50 | n, TEXT("50%"));
+				AppendMenu(ent_v, MF_STRING | (i->get_volume() == percent_to_db(0.75f) ? MF_CHECKED : 0), IDM_VOLUME_75 | n, TEXT("75%"));
+				AppendMenu(ent_v, MF_STRING | (i->get_volume() == percent_to_db(1.00f) ? MF_CHECKED : 0), IDM_VOLUME_100 | n, TEXT("100%"));
+				AppendMenu(ent_v, MF_STRING, IDM_VOLUME_UP | n, TEXT("音量加"));
+				AppendMenu(ent_v, MF_STRING, IDM_VOLUME_DOWN | n, TEXT("音量减"));
+				AppendMenu(tr_menu.root, MF_POPUP, (UINT_PTR)ent_v, sutil::s2w(i->name).c_str());
+				n++;
+			}
 			else
-				AppendMenu(hMenu, MF_STRING | MF_DISABLED, IDM_CLIENT | n, (sutil::s2w(i->name) + L"\t自己").c_str());
-			n++;
+				AppendMenu(tr_menu.root, MF_STRING | MF_DISABLED, IDM_CLIENT | n, (sutil::s2w(i->name) + L"\t自己").c_str());
 		}
 	}
 	plat_enum_input_device(tr_ai);
-	AppendMenu(trm_auddev, MF_STRING | MF_DISABLED, 0, TEXT("输入"));
+	AppendMenu(tr_menu.auddev, MF_STRING | MF_DISABLED, 0, TEXT("输入"));
 	for (int i = 0; i < tr_ai.size(); i++)
 	{
-		AppendMenu(trm_auddev, MF_STRING | ((plat_get_input_device() == tr_ai[i].id) ? MF_CHECKED : MF_UNCHECKED), IDM_AUDIN | i, sutil::s2w(tr_ai[i].name).c_str());
+		AppendMenu(tr_menu.auddev, MF_STRING | ((plat_get_input_device() == tr_ai[i].id) ? MF_CHECKED : MF_UNCHECKED), IDM_AUDIN | i, sutil::s2w(tr_ai[i].name).c_str());
 	}
-	AppendMenu(trm_auddev, MF_SEPARATOR, 0, NULL);
-	AppendMenu(trm_auddev, MF_STRING | MF_DISABLED, 0, TEXT("输出"));
+	AppendMenu(tr_menu.auddev, MF_SEPARATOR, 0, NULL);
+	AppendMenu(tr_menu.auddev, MF_STRING | MF_DISABLED, 0, TEXT("输出"));
 	plat_enum_output_device(tr_ao);
 	for (int i = 0; i < tr_ao.size(); i++)
 	{
-		AppendMenu(trm_auddev, MF_STRING | ((plat_get_output_device() == tr_ao[i].id) ? MF_CHECKED : MF_UNCHECKED), IDM_AUDOUT | i, sutil::s2w(tr_ao[i].name).c_str());
+		AppendMenu(tr_menu.auddev, MF_STRING | ((plat_get_output_device() == tr_ao[i].id) ? MF_CHECKED : MF_UNCHECKED), IDM_AUDOUT | i, sutil::s2w(tr_ao[i].name).c_str());
 	}
-	AppendMenu(trm_conf, MF_POPUP, (UINT_PTR)trm_auddev, TEXT("输入输出"));
+	AppendMenu(tr_menu.conf, MF_POPUP, (UINT_PTR)tr_menu.auddev, TEXT("输入输出"));
 
 
-	AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
-	AppendMenu(hMenu, MF_POPUP, (UINT_PTR)trm_conf, TEXT("设置"));
-	AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
-	AppendMenu(hMenu, MF_POPUP, (UINT_PTR)trm_svr, TEXT("服务器"));
-	AppendMenu(hMenu, MF_POPUP, (UINT_PTR)trm_chan, TEXT("频道"));
-	AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
-	AppendMenu(hMenu, MF_STRING
+	AppendMenu(tr_menu.root, MF_SEPARATOR, 0, NULL);
+	AppendMenu(tr_menu.root, MF_POPUP, (UINT_PTR)tr_menu.conf, TEXT("设置"));
+	AppendMenu(tr_menu.root, MF_SEPARATOR, 0, NULL);
+	AppendMenu(tr_menu.root, MF_POPUP, (UINT_PTR)tr_menu.svr, TEXT("服务器"));
+	AppendMenu(tr_menu.root, MF_POPUP, (UINT_PTR)tr_menu.chan, TEXT("频道"));
+	AppendMenu(tr_menu.root, MF_SEPARATOR, 0, NULL);
+	AppendMenu(tr_menu.root, MF_STRING
 		| (plat_get_global_mute() ? MF_CHECKED : MF_UNCHECKED)
 		| (tr_conn ? (tr_conn->entity_state.man_mute ? MF_DISABLED : 0) : 0), IDM_MUTE, TEXT("闭麦\tCtrl+Alt+M"));
-	AppendMenu(hMenu, MF_STRING
+	AppendMenu(tr_menu.root, MF_STRING
 		| (plat_get_global_silent() ? MF_CHECKED : MF_UNCHECKED)
 		| (tr_conn ? (tr_conn->entity_state.man_silent ? MF_DISABLED : 0) : 0), IDM_SILENT, TEXT("静音\tCtrl+Alt+S"));
-	AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
-	AppendMenu(hMenu, MF_STRING | (exit_confirm ? MF_CHECKED : MF_UNCHECKED), IDM_EXIT_CONFIRM, TEXT("确认退出"));
-	AppendMenu(hMenu, MF_STRING, IDM_EXIT, TEXT("退出"));
+	AppendMenu(tr_menu.root, MF_SEPARATOR, 0, NULL);
+	AppendMenu(tr_menu.root, MF_STRING | (exit_confirm ? MF_CHECKED : MF_UNCHECKED), IDM_EXIT_CONFIRM, TEXT("确认退出"));
+	AppendMenu(tr_menu.root, MF_STRING, IDM_EXIT, TEXT("退出"));
 
-	return hMenu;
+	return tr_menu.root;
 
+}
+void FreeMenu()
+{
+	DestroyMenu(tr_menu.root);
+	DestroyMenu(tr_menu.svr);
+	DestroyMenu(tr_menu.chan);
+	DestroyMenu(tr_menu.conf);
+	DestroyMenu(tr_menu.auddev);
+	for (auto& i : tr_menu.ents)
+	{
+		DestroyMenu(i);
+	}
+	tr_menu.ents.clear();
+	volume_list.clear();
 }
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -223,7 +266,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_COMMAND:
 	{
-		int const wmId = wParam;
+		UINT64 const wmId = wParam;
+		auto c = client_get_current_server();
 		// Parse the menu selections:
 		switch (wmId)
 		{
@@ -261,7 +305,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			else if (wmId & IDM_SERVER)
 			{
 				int n = ~IDM_SERVER & wmId;
-				auto c = client_get_current_server();
 				if (c && c->status == connection::state::established)
 				{
 					client_disconnect(c);
@@ -272,7 +315,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			else if (wmId & IDM_CHANNEL)
 			{
 				int n = ~IDM_CHANNEL & wmId;
-				auto c = client_get_current_server();
 				if (c)
 				{
 					int j = 0;
@@ -301,6 +343,41 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				bool s = plat_set_output_device(tr_ao[n].id);
 				conf_set_output_device(&tr_ao[n].id);
 			}
+			else if (wmId & IDM_VOLUME_0)
+			{
+				suid_t s = volume_list[~IDM_VOLUME_0 & wmId];
+				c->set_client_volume(s, percent_to_db(0));
+			}
+			else if (wmId & IDM_VOLUME_25)
+			{
+				suid_t s = volume_list[~IDM_VOLUME_25 & wmId];
+				c->set_client_volume(s, percent_to_db(.25f));
+			}
+			else if (wmId & IDM_VOLUME_50)
+			{
+				suid_t s = volume_list[~IDM_VOLUME_50 & wmId];
+				c->set_client_volume(s, percent_to_db(.50f));
+			}
+			else if (wmId & IDM_VOLUME_75)
+			{
+				suid_t s = volume_list[~IDM_VOLUME_75 & wmId];
+				c->set_client_volume(s, percent_to_db(.75f));
+			}
+			else if (wmId & IDM_VOLUME_100)
+			{
+				suid_t s = volume_list[~IDM_VOLUME_100 & wmId];
+				c->set_client_volume(s, percent_to_db(1));
+			}
+			else if (wmId & IDM_VOLUME_UP)
+			{
+				suid_t s = volume_list[~IDM_VOLUME_UP & wmId];
+				c->set_client_volume(s, c->get_client_volume(s) + 2);
+			}
+			else if (wmId & IDM_VOLUME_DOWN)
+			{
+				suid_t s = volume_list[~IDM_VOLUME_DOWN & wmId];
+				c->set_client_volume(s, c->get_client_volume(s) - 2);
+			}
 			else
 				return DefWindowProc(hwnd, message, wParam, lParam);
 		}
@@ -321,7 +398,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			SetForegroundWindow(hwnd);
 			auto hMenu = MakeMenu();
 			TrackPopupMenu(hMenu, TPM_RIGHTBUTTON, pt.x, pt.y, NULL, hwnd, NULL);
-			DestroyMenu(hMenu);
 			//ShowContextMenu(hwnd, pt);
 		}
 		break;

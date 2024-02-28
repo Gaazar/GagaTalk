@@ -159,7 +159,7 @@ void shell_ctx::shell_conf()
 				{
 					j.push_back(configor::json::parse(R"({"name": "name","type": "Compressor","args": {"ratio": 10,"threshold": -18.0,"attack": 6,"release": 60,"gain": 0},"enable": true})"));
 				}
-				if (t == "RNNDenoise")
+				if (t == "Gain&Clamp")
 				{
 					j.push_back(configor::json::parse(R"({"name": "name","type": "Gain&Clamp","args": {"gain": 3,"clamp": 0.0},"enable": true})"));
 				}

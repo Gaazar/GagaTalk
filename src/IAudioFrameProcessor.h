@@ -191,3 +191,9 @@ public:
 	void Process(AudioFrame& f);
 	AudioProcessType Type() { return AudioProcessType::Process; };
 };
+
+class EchoCanceler : public IAudioFrameProcessor
+{
+
+
+};
