@@ -15,5 +15,5 @@ static inline float percent_to_db(const float p)
 	//1		=  0
 	if (p < 0.001) return -INFINITY;
 	auto x = p * 0.999 + 0.001;
-	return mul_to_db(x * x * x * x);
+	return 10 * log10f(p);
 }
