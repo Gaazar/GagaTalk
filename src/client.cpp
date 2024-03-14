@@ -317,6 +317,7 @@ void connection::on_mic_pack(AudioFrame* f)
 		else if (len < 1)
 		{
 			debug_state.n_pak_err_enc++;
+			printf("ERROR: encode error %d\n\tAF: n_channel=%d, n_samples=%d\n", len, frame.nChannel, frame.nSamples);
 		}
 		frame.Release();
 	}
