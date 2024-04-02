@@ -781,7 +781,8 @@ void shell_event_entity(event t, entity* e)
 	case event::output_change:
 		break;
 	case event::volume_change:
-		printf("用户%s(%u)的音量：%f\n", e->name.c_str(), e->suid, e->get_volume());
+		if (e->playback)
+			printf("用户%s(%u)的音量：%f\n", e->name.c_str(), e->suid, e->get_volume());
 		break;
 	default:
 		break;
