@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <unordered_set>
 
 #define GT_E_NULLPTR -1
 #define GT_E_
@@ -80,8 +81,12 @@ struct ServerDesc
 	//server info info
 	uint64_t usid;
 	std::string host;
+	uint16_t port;
 	std::string name;
+	std::string description;
 	uint32_t n_group;
+	std::string icon;
+
 };
 struct client_state
 {
@@ -108,6 +113,14 @@ struct client_state
 	bool is_silent()
 	{
 		return man_silent || silent;
+	}
+	int mute_value()
+	{
+		return (((int)man_mute) | (((int)mute) << 1));
+	}
+	int silent_value()
+	{
+		return (((int)man_silent) | (((int)silent) << 1));
 	}
 };
 static std::string escape(const char* in, size_t slen)
@@ -158,11 +171,11 @@ static std::string escape(std::string in)
 			n++;
 			bs = false;
 			break;
-		//case '-':
-		//	if (bs)
-		//		out << '\\';
-		//	bs = false;
-		//	break;
+			//case '-':
+			//	if (bs)
+			//		out << '\\';
+			//	bs = false;
+			//	break;
 		default:
 			bs = false;
 			break;
@@ -494,7 +507,11 @@ public:
 
 };
 int edcrypt_voip_pack(char* buf, int sz, uint32_t cert);
-
+struct pm_set
+{
+	std::unordered_set<std::string> permissions;
+	int level = 0;
+};
 inline uint64_t stru64(std::string s)
 {
 	return std::strtoull(s.c_str(), nullptr, 10);

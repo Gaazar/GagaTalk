@@ -108,9 +108,11 @@ void connection::on_recv_cmd(command& cmd)
 		}
 		std::string res;
 		if (r == r::new_user)
-			res = fmt::format("ch {} {} -t {} -m {} -v {}\n", suid, s, token, escape(msg), VERSION_SEQ);
+			res = fmt::format("ch {} {} -n {} -t {} -m {} -v {} -sn {} -sd {}\n", suid, s, name, token, escape(msg), VERSION_SEQ,
+				escape(server->name), escape(server->description));
 		else
-			res = fmt::format("ch {} {} -m {} -v {}\n", suid, s, escape(msg), VERSION_SEQ);
+			res = fmt::format("ch {} {} -n {} -m {} -v {} -sn {} -sd {}\n", suid, s, name, escape(msg), VERSION_SEQ,
+				escape(server->name), escape(server->description));
 		send_cmd(res);
 		if (r == r::new_user || r == r::ok)
 		{
@@ -123,6 +125,7 @@ void connection::on_recv_cmd(command& cmd)
 			server->db_get_role_server(this);
 			send_channel_list();//cd
 			send_clients_list();//rd
+			send_role_permissions();//role
 			send_cmd("info\n");
 			{
 				//std::lock_guard<std::mutex> g(server->m_conn);
@@ -223,7 +226,7 @@ void connection::on_recv_cmd(command& cmd)
 				send_cmd(fmt::format("rej rc -m 'user not exist'\n"));
 				return;
 			}
-			if(s == suid)
+			if (s == suid)
 			{
 				send_cmd(fmt::format("rej rc -m 'yourself'\n"));
 				return;
@@ -287,6 +290,30 @@ void connection::send_clients_list()
 			ss << fmt::format("rd {} -n {} -c {}\n",
 				i->suid, esc_quote(i->name), i->current_chid);
 	}
+	send_cmd(ss.str());
+}
+void connection::send_role_permissions()
+{
+	chid_t chid = current_chid;
+	std::stringstream ss;
+	ss << fmt::format("role {} ", role_server);
+	if (chid)
+	{
+		ss << fmt::format("-chid {} -crole {} ", chid, role_channel);
+	}
+	ss << "\nperm ";
+	for (auto& i : server->server_roles[role_server].permissions)
+	{
+		ss << i << " ";
+	}
+	if (chid)
+	{
+		for (auto& i : server->channel_roles[role_channel].permissions)
+		{
+			ss << i << " ";
+		}
+	}
+	ss << "\n";
 	send_cmd(ss.str());
 }
 int connection::recv_cmd_thread()
@@ -395,6 +422,7 @@ void connection::join_channel(uint32_t chid, bool mon)
 			ss << "sc " << suid;
 			cg_state(ss) << "\n";
 			cn->broadcast_cmd(ss.str());
+			send_role_permissions();
 			send_cmd(fmt::format("\ns {} {} {}\n", chid, cn->session_id, cert_code));
 			send_clients_info();
 		}

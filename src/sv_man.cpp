@@ -199,8 +199,9 @@ void instance::mp_grant(command& cmd, connection* conn)
 			}
 			if (tc && uc->current_chid == c)
 			{
-				connections[u]->role_channel = to_c;;
+				uc->role_channel = to_c;;
 			}
+			uc->send_role_permissions();
 		}
 		ss << "Done.\n";
 		man_display(ss.str(), conn);
@@ -576,4 +577,53 @@ void instance::mp_debug(command& cmd, connection* conn)
 	}
 	man_display(ss.str(), conn);
 
+}
+void instance::mp_mod_server(command& cmd, connection* conn)
+{
+	std::stringstream ss;
+	//mods 
+	const char* name = nullptr;
+	const char* desc = nullptr;
+	const char* icon = nullptr;
+	{
+		std::lock_guard<std::mutex> g(m_conn);
+		if (cmd.n_opt_val("-n"))
+		{
+			if (conn && !conn->permission("modify.server.name"))
+			{
+				ss << "permission denied. modify.server.name\n";
+				man_display(ss.str(), conn);
+				return;
+			}
+			name = cmd.option("-n").c_str();
+			this->name = name;
+		}
+		if (cmd.n_opt_val("-d"))
+		{
+			if (conn && !conn->permission("modify.server.description"))
+			{
+				ss << "permission denied. modify.server.description\n";
+				man_display(ss.str(), conn);
+				return;
+			}
+			desc = cmd.option("-d").c_str();
+			this->description = desc;
+		}
+		if (cmd.n_opt_val("-icon"))
+		{
+			if (conn && !conn->permission("modify.server.icon"))
+			{
+				ss << "permission denied. modify.server.icon\n";
+				man_display(ss.str(), conn);
+				return;
+			}
+			icon = cmd.option("-icon").c_str();
+			this->icon = icon;
+		}
+	}
+	db_update_server(name, desc, icon);
+	broadcast(fmt::format("sv -sn {} -sd {} -icon {}", this->name, this->description, this->icon));
+
+	ss << "Done.\n";
+	man_display(ss.str(), conn);
 }

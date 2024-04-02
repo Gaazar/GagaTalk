@@ -7,7 +7,7 @@
 #include <opus/opus.h>
 #include <functional>
 #include "cli.h"
-#define BUILD_SEQ 24
+#define BUILD_SEQ 25
 struct debug_info
 {
 	uint32_t n_pak_recv = 0;
@@ -34,12 +34,9 @@ struct config
 	int mute;
 	float volume_db;
 };
-struct server_info
+struct server_info : ServerDesc
 {
 	std::string suid;
-	std::string name;
-	std::string hostname;
-	std::string icon;
 	std::string token;
 };
 struct plat_conn;
@@ -50,6 +47,9 @@ struct entity : RemoteClientDesc
 	connection* conn = nullptr;
 	client_state entity_state;
 	debug_info debug_state;
+	std::string server_role;
+	std::string channel_role;
+	pm_set permissions;
 	float get_volume();
 	float set_volume(float);
 	bool get_mute();
@@ -91,6 +91,7 @@ struct connection :ServerDesc
 	client_state entity_state;
 	debug_info debug_state;
 	FrameAligner fa_netopt;
+	entity* local = nullptr;
 	enum class state
 	{
 		disconnect = 0,
@@ -158,6 +159,7 @@ bool plat_enum_output_device(std::vector<audio_device>& ls);
 
 void client_set_global_mute(bool m, bool broadcast = true);
 void client_set_global_silent(bool m, bool broadcast = true);
+void client_set_global_volume(float db);
 
 void sapi_set_volume(int v);
 void sapi_set_rate(int r);
@@ -174,6 +176,8 @@ int a2w(const char* in, int len, wchar_t** out);
 int conf_get_server(server_info* s); //fill hostname and others will be filled.
 int conf_get_username(std::string& un); //return 1 if success
 int conf_set_token(std::string host, uint64_t suid, std::string token);
+int conf_set_server(server_info& si);//set name icon desc
+int conf_set_server(ServerDesc& si);//set name icon desc
 int conf_set_username(std::string un); //return 1 if success
 int conf_get_filter(std::string& filter);
 int conf_set_filter(std::string filter);

@@ -52,6 +52,14 @@ namespace sutil
 		delete[] buffer;
 		return result;
 	}
+	std::string a2u8(const std::string& str)
+	{
+		return w2s(s2w(str, CP_ACP), CP_UTF8);
+	}
+	std::string u82a(const std::string& str)
+	{
+		return w2s(s2w(str, CP_UTF8), CP_ACP);
+	}
 
 }
 

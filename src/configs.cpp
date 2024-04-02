@@ -140,7 +140,7 @@ int create_structure()
 	r = sqlite3_exec(db, sql, [&](int cnt, char** v, char** k)->int
 		{
 			c = atoi(*v);
-	return 0;
+			return 0;
 		}, &err_msg);
 
 	if (c == 0)
@@ -198,14 +198,14 @@ int conf_get_servers(std::vector<server_info>& s)
 	auto hr = sqlite3_exec(db, sql, [&](_cmap& kv)
 		{
 			server_info si;
-	si.hostname = kv["address"];
-	si.name = kv["name"];
-	si.suid = stru64(kv["suid"]);
-	auto x = kv["icon"];
-	if (x) si.icon = x;
-	x = kv["token"];
-	if (x) si.token = x;
-	s.push_back(si);
+			si.host = kv["address"];
+			si.name = kv["name"];
+			si.suid = stru64(kv["suid"]);
+			auto x = kv["icon"];
+			if (x) si.icon = x;
+			x = kv["token"];
+			if (x) si.token = x;
+			s.push_back(si);
 		}, &emsg);
 	assert(!hr);
 	return 0;
@@ -215,21 +215,21 @@ int conf_get_server(server_info* s) //fill hostname and others will be filled.
 {
 	if (!s) return -1;
 	char* emsg = nullptr;
-	auto sql = fmt::format("SELECT * FROM servers WHERE address = '{}';", s->hostname);
+	auto sql = fmt::format("SELECT * FROM servers WHERE address = '{}';", s->host);
 	_map kv;
 	auto hr = sqlite3_exec(db, sql.c_str(), &kv, &emsg);
 	assert(!hr);
 	if (kv.size() == 0)
 	{
 		s->suid = std::to_string(randu32());
-		s->name = s->hostname;
-		sql = fmt::format("INSERT INTO servers (name,address,suid) VALUES ('{}','{}',{});", s->name, s->hostname, s->suid);
+		s->name = s->host;
+		sql = fmt::format("INSERT INTO servers (name,address,suid) VALUES ('{}','{}',{});", s->name, s->host, s->suid);
 		hr = sqlite3_exec(db, sql.c_str(), nullptr, nullptr, &emsg);
 		assert(!hr);
 	}
 	else
 	{
-#define _RAND 1
+		//#define _RAND 1
 #if defined(_DEBUG) && defined(_RAND)
 		srand(time(nullptr));
 		s->suid = std::to_string(randu32());// kv["suid"];
@@ -238,9 +238,10 @@ int conf_get_server(server_info* s) //fill hostname and others will be filled.
 		s->suid = kv["suid"];
 		s->name = kv["name"];
 #endif
-		s->hostname = kv["address"];
+		s->host = kv["address"];
 		s->icon = kv["icon"];
 		s->token = kv["token"];
+		//s->desc = kv["desc"];
 	}
 	return 0;
 }
@@ -248,6 +249,23 @@ int conf_set_token(std::string host, uint64_t suid, std::string token)
 {
 	auto sql = fmt::format("UPDATE servers SET suid = {}, token = '{}' WHERE address = '{}';", suid, token, host);
 	auto hr = sqlite3_exec(db, sql.c_str(), nullptr, nullptr, &err_msg);
+	assert(!hr);
+	return hr;
+}
+int conf_set_server(server_info& si)//set name icon desc
+{
+	if (si.name.empty()) si.name = si.host;
+	auto sql = sqlite3_mprintf("UPDATE servers SET name = %Q WHERE address = %Q;", si.name.c_str(), si.host.c_str());
+	auto hr = sqlite3_exec(db, sql, nullptr, nullptr, &err_msg);
+	assert(!hr);
+	sqlite3_free(sql);
+	return hr;
+}
+int conf_set_server(ServerDesc& si)//set name icon desc
+{
+	if (si.name.empty()) si.name = si.host;
+	auto sql = sqlite3_mprintf("UPDATE servers SET name = %Q WHERE address = %Q;", si.name.c_str(), si.host.c_str());
+	auto hr = sqlite3_exec(db, sql, nullptr, nullptr, &err_msg);
 	assert(!hr);
 	return hr;
 }

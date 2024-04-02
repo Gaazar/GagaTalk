@@ -10,6 +10,8 @@ namespace sutil
 
 	std::wstring s2w(const std::string& str, unsigned int code_page = 0);
 	std::wstring s2w(const char* str, size_t len);
+	std::string a2u8(const std::string& str);
+	std::string u82a(const std::string& str);
 
 	//inline std::vector<string> split(string& s, wchar_t spliter = ' ')
 	//{

@@ -2,6 +2,7 @@
 #include<WS2tcpip.h>
 #include "gt_defs.h"
 #include "client.h"
+#include "events.h"
 #pragma comment(lib, "ws2_32.lib")
 
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -25,12 +26,14 @@ connection::connection()
 	int e = OPUS_OK;
 	aud_enc = opus_encoder_create(48000, 1, OPUS_APPLICATION_VOIP, &e);
 	e = opus_encoder_ctl(aud_enc, OPUS_SET_DTX(1));
+	local = new entity();
 	//e = opus_encoder_ctl(aud_enc, OPUS_SET_EXPERT_FRAME_DURATION(OPUS_FRAMESIZE_60_MS));
 }
 int connection::connect(const char* host, uint16_t port)//sync
 {
 	plat->discard = false;
 	this->host = host;
+	this->port = port;
 	name = host;
 	plat->sk_cmd = socket(AF_INET, SOCK_STREAM, 0);
 	if (!plat->sk_cmd) return -1;
@@ -85,6 +88,7 @@ int connection::connect(const char* host, uint16_t port)//sync
 		closesocket(plat->sk_voip);
 		plat->sk_voip = 0;
 		status = state::disconnect;
+		e_server(event::fail, this);
 		return -3;
 	}
 	se = handshake();
@@ -164,10 +168,12 @@ int connection::handshake()
 {
 	server_info si;
 	std::string uname;
-	si.hostname = host;
+	si.host = host;
 	conf_get_server(&si);
 	conf_get_username(uname);
 	suid = std::strtoull(si.suid.c_str(), nullptr, 10);
+	local->name = uname;
+	local->suid = suid;
 	auto cmd = fmt::format("hs {} {} {} -v {}\n", suid, uname, si.token, BUILD_SEQ);
 	send_command(cmd.c_str(), cmd.length());
 	return 0;
@@ -227,6 +233,7 @@ connection::~connection()
 	if (plat)
 		delete plat;
 	plat = nullptr;
+	delete local;
 }
 
 bool wsa = false;

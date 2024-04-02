@@ -47,6 +47,15 @@ void connection::on_recv_cmd(command& cmd)
 				e_server(event::auth, this);
 			}
 			printf("[%s]\n", cmd.str().c_str());
+			local->conn = this;
+			local->suid = suid;
+			if (cmd.has_option("-n"))
+				local->name = cmd["-n"];
+			if (cmd.has_option("-sn"))
+				this->name = cmd["-sn"];
+			if (cmd.has_option("-sd"))
+				this->description = cmd["-sd"];
+			conf_set_server(*this);
 		}
 	}
 	else
@@ -88,7 +97,11 @@ void connection::on_recv_cmd(command& cmd)
 			{
 				if (cmd.has_option("-l"))
 					return;
-				auto ne = new entity();
+				entity* ne;
+				if (suid == this->suid)
+					ne = local;
+				else
+					ne = new entity();
 				entities[suid] = ne;
 				ne->suid = suid;
 				ne->conn = this;
@@ -104,8 +117,10 @@ void connection::on_recv_cmd(command& cmd)
 				{
 					this->chid = 0;
 					this->current = nullptr;
+					local->current_chid = 0;
 				}
-				delete e;
+				else
+					delete e;
 			}
 			else
 			{
@@ -164,6 +179,7 @@ void connection::on_recv_cmd(command& cmd)
 		else if (cmd[0] == "info")
 		{
 			send_command(fmt::format("sc -mute {} -silent {}\n", (int)plat_get_global_mute(), (int)plat_get_global_silent()));
+			e_server(event::initiate, this);
 		}
 		else if (cmd[0] == "s")
 		{
@@ -192,9 +208,9 @@ void connection::on_recv_cmd(command& cmd)
 					plat_delete_vr(mic);
 				mic = plat_create_vr();
 				mic->callback = [=](AudioFrame* f)
-				{
-					on_mic_pack(f);
-				};
+					{
+						on_mic_pack(f);
+					};
 			}
 			else
 			{
@@ -276,6 +292,31 @@ void connection::on_recv_cmd(command& cmd)
 				debug_state.shell->input(cmd[1]);
 			}
 		}
+		else if (cmd[0] == "role")
+		{
+			local->server_role = cmd[1];
+			if (current)
+			{
+				local->channel_role = cmd["-crole"];
+			}
+		}
+		else if (cmd[0] == "perm")
+		{
+			for (int i = 1; i < cmd.n_args(); i++)
+			{
+				local->permissions.permissions.insert(cmd[i]);
+			}
+
+		}
+		else if (cmd[0] == "sv")
+		{
+			std::string a = "±¾µØ";
+			if (cmd.has_option("-sn"))
+				this->name = cmd["-sn"];
+			if (cmd.has_option("-sd"))
+				this->description = cmd["-sd"];
+			conf_set_server(*this);
+		}
 	}
 }
 int connection::clean_up()
@@ -324,9 +365,9 @@ void connection::on_mic_pack(AudioFrame* f)
 }
 void connection::join_channel(uint32_t chid)
 {
-	if (mic)
-		plat_delete_vr(mic);
-	mic = nullptr;
+	//if (mic)
+	//	plat_delete_vr(mic);
+	//mic = nullptr;
 	auto cmd = fmt::format("j {}\n", chid);
 	send_command(cmd.c_str(), cmd.length());
 }
@@ -369,7 +410,9 @@ void channel::erase(entity* e)
 	if (op && conn->current && chid == conn->current->chid && conn->status == connection::state::established)
 	{
 		if (e->suid == conn->suid)
+		{
 			e_channel(event::left, std::move(this));
+		}
 		else
 			e_entity(event::left, std::move(e));
 		e->remove_playback();
@@ -440,7 +483,7 @@ void connection::set_client_mute(uint32_t suid, bool mute, bool save)
 		conf_set_uc_mute(host, suid, mute);
 	if (!entities.count(suid)) return;
 	entities[suid]->set_mute(mute);
-	e_client(event::mute_user, std::move(entities[suid]));
+	e_entity(event::mute, std::move(entities[suid]));
 }
 bool connection::get_client_mute(uint32_t suid)
 {
@@ -578,7 +621,12 @@ void client_set_global_silent(bool s, bool broadcast)
 		server->send_command(cmd);
 	}
 }
+void client_set_global_volume(float db)
+{
+	plat_set_global_volume(db);
+	conf_set_global_volume(db);
 
+}
 int client_uninit()
 {
 	for (auto& i : connections)

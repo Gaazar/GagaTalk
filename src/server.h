@@ -5,7 +5,6 @@
 #include <thread>
 #include "sql.h"
 #include <map>
-#include <unordered_set>
 
 #ifdef _MSC_VER
 #include<winsock2.h>
@@ -23,11 +22,7 @@ typedef sockaddr_in SOCKADDR_IN;
 struct instance;
 extern bool terminated;
 //typedef std::unordered_set<std::string> pm_set;
-struct pm_set
-{
-	std::unordered_set<std::string> permissions;
-	int level = 0;
-};
+
 enum class r
 {
 	ok = 0,
@@ -74,6 +69,7 @@ struct connection : RemoteClientDesc
 	void release_debug();
 	void send_channel_list();
 	void send_clients_list();
+	void send_role_permissions();
 	//void send_channel_info();
 	void send_clients_info();
 	void join_channel(uint32_t chid, bool mon = false);
@@ -98,7 +94,7 @@ struct channel : ChannelDesc
 	std::stringstream& cgl_listinfo(std::stringstream& ss);//command line generation, generates a full command, not a part;
 
 };
-struct instance
+struct instance : ServerDesc
 {
 	std::mutex m_conn;
 	std::mutex m_man;
@@ -144,6 +140,7 @@ struct instance
 	int db_allocate_chid();
 	int db_create_channel(chid_t c, chid_t p, std::string name, std::string desc, chid_t owner);
 	int db_update_channel(chid_t c, const char* name, const char* desc);
+	int db_update_server(const char* name, const char* desc, const char* icon);
 	void mp_grk(command& cmd, connection* conn); //mp = manage process
 	void mp_grant(command& cmd, connection* conn);
 	void mp_new_channel(command& cmd, connection* conn);
@@ -154,6 +151,7 @@ struct instance
 	void mp_silent(command& cmd, connection* conn);
 	void mp_move(command& cmd, connection* conn);
 	void mp_debug(command& cmd, connection* conn);
+	void mp_mod_server(command& cmd, connection* conn);
 
 	static void man_help(connection* conn);
 	static void man_display(std::string s, connection* conn);

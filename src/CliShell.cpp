@@ -463,6 +463,12 @@ int shell_ctx::start()
 				plat_set_global_volume(vdb);
 				conf_set_global_volume(vdb);
 			}
+			else if (cmd[0] == "vv")
+			{
+				float db;
+				conf_get_global_volume(db);
+				*out << fmt::format("master volume: {}db, {}%\n", db, db_to_percent(db) * 100);
+			}
 			else if (cmd[0] == "conf")
 			{
 				shell_conf();
@@ -491,7 +497,7 @@ int shell_ctx::start()
 			else if (cmd[0] == "c")
 			{
 				if (cmd.n_args() < 3) continue;
-				if (c && c->status != connection::state::disconnect) continue;
+				if (c && c->host + ":7970" != cmd[1] + ":7970") client_disconnect(c);
 				conf_set_username(cmd[2]);
 				auto cr = client_connect(cmd[1].c_str(), 7970, &c);
 				*out << fmt::format("connect result: {}\n", cr);
@@ -715,28 +721,7 @@ void shell_event_client(event t, void* data)
 	case event::volume_change:
 		printf("总音量：%f\n", *(float*)data);
 		break;
-	case event::mute_user:
-	{
-		auto e = (entity*)data;
-		bool b = e->entity_state.silent || e->entity_state.man_silent || e->get_mute();
-		if (b)
-		{
-			printf("用户%s(%u)静音：是(", e->name.c_str(), e->suid);
-			if (e->get_mute())
-				printf("本地 ");
-			if (e->entity_state.silent)
-				printf("主动 ");
-			if (e->entity_state.man_silent)
-				printf("服务器 ");
-			printf(")\n");
-		}
-		else
-		{
-			printf("用户%s(%u)静音：否\n", e->name.c_str(), e->suid);
-
-		}
-	}
-	break;
+		break;
 	default:
 		break;
 	}
@@ -802,6 +787,35 @@ void shell_event_entity(event t, entity* e)
 		break;
 	}
 }
+void shell_event_server(event t, connection* c)
+{
+	switch (t)
+	{
+	case event::join:
+		break;
+	case event::left:
+		break;
+	case event::mute:
+		break;
+	case event::silent:
+		break;
+	case event::auth:
+		break;
+	case event::fail:
+		printf(fmt::format("无法连接至服务器: {}:{}\n", c->host, c->port).c_str());
+		break;
+	case event::input_change:
+		break;
+	case event::output_change:
+		break;
+	case event::volume_change:
+		break;
+	case event::initiate:
+		break;
+	default:
+		break;
+	}
+}
 int shell_main()
 {
 	srand(time(nullptr));
@@ -809,6 +823,7 @@ int shell_main()
 	shell_ctx sh(std::cin, std::cout);
 	e_client += shell_event_client;
 	e_entity += shell_event_entity;
+	e_server += shell_event_server;
 	client_check_update();
 	sh.start();
 	client_uninit();

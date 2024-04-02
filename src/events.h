@@ -5,11 +5,11 @@
 
 enum class event
 {
-	join, left, mute, silent, auth,
+	join, left, mute, silent, auth, fail,
 	input_change,	//data = char* device_id
 	output_change,	//data = char* device_id
 	volume_change,	//data = float* db
-	mute_user,		//data = entity* 
+	initiate,		//data = nullptr
 
 };
 

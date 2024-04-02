@@ -135,6 +135,18 @@ int db_upgrade(sqlite3* db)
 		assert(!r);
 
 	}
+	if (db_version == 1)
+	{
+		sql =
+			"\
+			INSERT OR REPLACE INTO channel (chid,name,desc) VALUES(0,'GagaTalkServer','GagaTalk server side description.');\
+			UPDATE meta set version = 2 where id = 0;\
+			";
+		db_version = 2;
+		int r = sqlite3_exec(db, sql.c_str(), nullptr, 0, &err_msg);
+		assert(!r);
+
+	}
 	return 0;
 }
 r instance::db_check_user(uint32_t& suid, std::string& token, std::string& msg)
@@ -590,6 +602,43 @@ desc = IFNULL(\
 ) \
 WHERE chid = %u;",
 name, c, desc, c, c);
+	auto r = sqlite3_exec(db, sql, nullptr, nullptr, &msg);
+	sqlite3_free(sql);
+	assert(!r);
+	return r;
+
+}
+int instance::db_update_server(const char* name, const char* desc, const char* icon)
+{
+	char* msg;
+	auto sql = sqlite3_mprintf("\
+UPDATE channel \
+SET name = IFNULL(\
+	%Q,\
+	(\
+		SELECT name \
+		FROM channel \
+		WHERE chid = 0\
+		)\
+),\
+desc = IFNULL(\
+	%Q,\
+	(\
+		SELECT desc \
+		FROM channel \
+		WHERE chid = 0\
+		)\
+),\
+icon = IFNULL(\
+	%Q,\
+	(\
+		SELECT icon \
+		FROM channel \
+		WHERE chid = 0\
+		)\
+) \
+WHERE chid = 0;",
+name, desc, icon);
 	auto r = sqlite3_exec(db, sql, nullptr, nullptr, &msg);
 	sqlite3_free(sql);
 	assert(!r);

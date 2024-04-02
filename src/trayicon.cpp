@@ -8,6 +8,7 @@
 #define FMT_HEADER_ONLY
 #include <fmt/core.h>
 #include <fmt/xchar.h>
+#include "web.h"
 
 using namespace std;
 
@@ -24,6 +25,7 @@ class __declspec(uuid("618CA4D0-E67F-436F-B6DE-78994711EE4E")) TrayIcon;
 #define IDM_EXIT_CONFIRM 0x301
 #define IDM_MUTE 0x302
 #define IDM_SILENT 0x303
+#define IDM_WEBGUI 0x304
 
 #define IDM_VOLUME_0    0x10'0000
 #define IDM_VOLUME_25   0x20'0000
@@ -147,10 +149,10 @@ HMENU MakeMenu()
 		int n = 0;
 		for (auto& i : tr_svrs)
 		{
-			if (tr_conn && tr_conn->host == i.hostname && tr_conn->status != connection::state::disconnect)
-				AppendMenu(tr_menu.svr, MF_STRING | MF_CHECKED, IDM_SERVER | n, sutil::s2w(i.name, CP_UTF8).c_str());
+			if (tr_conn && tr_conn->host == i.host && tr_conn->status != connection::state::disconnect)
+				AppendMenu(tr_menu.svr, MF_STRING | MF_CHECKED, IDM_SERVER | n, sutil::s2w(i.name).c_str());
 			else
-				AppendMenu(tr_menu.svr, MF_STRING, IDM_SERVER | n, sutil::s2w(i.name, CP_UTF8).c_str());
+				AppendMenu(tr_menu.svr, MF_STRING, IDM_SERVER | n, sutil::s2w(i.name).c_str());
 			n++;
 		}
 	}
@@ -226,6 +228,7 @@ HMENU MakeMenu()
 	AppendMenu(tr_menu.root, MF_STRING
 		| (plat_get_global_silent() ? MF_CHECKED : MF_UNCHECKED)
 		| (tr_conn ? (tr_conn->entity_state.man_silent ? MF_DISABLED : 0) : 0), IDM_SILENT, TEXT("静音\tCtrl+Alt+S"));
+	AppendMenu(tr_menu.root, MF_STRING, IDM_WEBGUI, TEXT("打开主界面"));
 	AppendMenu(tr_menu.root, MF_SEPARATOR, 0, NULL);
 	AppendMenu(tr_menu.root, MF_STRING | (exit_confirm ? MF_CHECKED : MF_UNCHECKED), IDM_EXIT_CONFIRM, TEXT("确认退出"));
 	AppendMenu(tr_menu.root, MF_STRING, IDM_EXIT, TEXT("退出"));
@@ -296,6 +299,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			client_set_global_silent(s);
 		}
 		break;
+		case IDM_WEBGUI:
+			web_open_browser("http://127.0.0.1:10709");
+			break;
 		default:
 			if (wmId & IDM_CLIENT)
 			{
@@ -309,7 +315,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				{
 					client_disconnect(c);
 				}
-				client_connect(tr_svrs[n].hostname, 7970, &c);
+				client_connect(tr_svrs[n].host, 7970, &c);
 				break;
 			}
 			else if (wmId & IDM_CHANNEL)
@@ -401,6 +407,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//ShowContextMenu(hwnd, pt);
 		}
 		break;
+		case WM_LBUTTONUP:
+			web_open_browser("http://127.0.0.1:10709");
+
+			break;
 		}
 		break;
 
@@ -423,12 +433,12 @@ void thread_message()
 		CW_USEDEFAULT, 0, 250, 200, NULL, NULL, tr_hinst, NULL);
 	tr_hwnd = hwnd;
 	e_channel += [](event t, channel* e)
-	{
-		if (t == event::join)
 		{
-			auto b = ModifyNotificationIcon(tr_hwnd, fmt::format("服务器：{}\n频道：{}", e->conn->name, e->name));
-		}
-	};
+			if (t == event::join)
+			{
+				auto b = ModifyNotificationIcon(tr_hwnd, fmt::format("服务器：{}\n频道：{}", e->conn->name, e->name));
+			}
+		};
 
 	MSG msg;
 	while (GetMessage(&msg, nullptr, 0, 0))

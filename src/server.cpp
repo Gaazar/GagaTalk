@@ -38,17 +38,26 @@ int instance::start(const char* dbn)
 	sqlite3_exec(
 		db, sql.c_str(), [this](_map& kv)
 		{
-			channel* c = new channel();
-	c->chid = std::strtoul(kv["chid"].c_str(), nullptr, 10);
-	c->name = kv["name"];
-	c->parent = std::strtoul(kv["parent"].c_str(), nullptr, 10);
-	c->owner = std::strtoul(kv["owner"].c_str(), nullptr, 10);
-	c->description = kv["desc"];
-	c->capacity = std::strtoul(kv["capacity"].c_str(), nullptr, 10);
-	c->privilege = kv["privilege"];
-	c->session_id = randu32();
-	c->inst = this;
-	channels[c->chid] = c; },
+			if (std::strtoul(kv["chid"].c_str(), nullptr, 10))
+			{
+				channel* c = new channel();
+				c->chid = std::strtoul(kv["chid"].c_str(), nullptr, 10);
+				c->name = kv["name"];
+				c->parent = std::strtoul(kv["parent"].c_str(), nullptr, 10);
+				c->owner = std::strtoul(kv["owner"].c_str(), nullptr, 10);
+				c->description = kv["desc"];
+				c->capacity = std::strtoul(kv["capacity"].c_str(), nullptr, 10);
+				c->privilege = kv["privilege"];
+				c->session_id = randu32();
+				c->inst = this;
+				channels[c->chid] = c;
+			}
+			else
+			{
+				this->name = kv["name"];
+				this->description = kv["desc"];
+			}
+			},
 		db_msg);
 	sk_lsn = socket(AF_INET, SOCK_STREAM, 0);
 	if (!sk_lsn)
@@ -71,6 +80,7 @@ int instance::start(const char* dbn)
 #endif
 	saddr.sin_family = AF_INET;
 	saddr.sin_port = htons(7970);
+	this->port = 7970;
 	if (bind(sk_lsn, (sockaddr*)&saddr, sizeof(sockaddr)) != 0)
 	{
 		closesocket(sk_lsn);
@@ -174,7 +184,7 @@ int instance::voip_recv_thread()
 				conn = connections[suid];
 				edcrypt_voip_pack(buffer, len, conn->cert_code);
 				ssid = *((uint32_t*)&buffer[4]);
-				if (!channels.count(conn->current_chid) && channels[conn->current_chid]->session_id != ssid)
+				if (channels.count(conn->current_chid) && channels[conn->current_chid]->session_id != ssid)
 				{
 					continue;
 				}
@@ -335,6 +345,7 @@ void instance::on_man_cmd(command& cmd, connection* conn)
 	else if (cmd[0] == "mute") mp_mute(cmd, conn);
 	else if (cmd[0] == "move") mp_move(cmd, conn);
 	else if (cmd[0] == "debug") mp_debug(cmd, conn);
+	else if (cmd[0] == "mods") mp_mod_server(cmd, conn);
 }
 void instance::cl_move(suid_t suid, chid_t chid)
 {

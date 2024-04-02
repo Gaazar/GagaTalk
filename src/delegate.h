@@ -119,14 +119,16 @@ public:
     {
         for (auto itr = func_list.begin(); itr != func_list.end(); itr++)
         {
-            try
-            {
-                (*itr)(args...);
-            }
-            catch (std::exception ex)
-            {
-                //do something...
-            }
+            (*itr)(args...);
+
+            //try
+            //{
+            //    (*itr)(args...);
+            //}
+            //catch (std::exception ex)
+            //{
+            //    //do something...
+            //}
         }
     }
 
