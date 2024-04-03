@@ -358,6 +358,7 @@ int web_init(int port)
 			if (web_wsc == &conn)
 			{
 				printf("wsraw disconnect\n");
+				web_wsc = nullptr;
 
 			}
 		});
