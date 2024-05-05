@@ -60,6 +60,23 @@ int main()
 
 	SetUnhandledExceptionFilter(ExceptionFilter);
 
+	AudioFrame af[4];
+	af[0].Allocate(126);
+	af[1].Allocate(480);
+	af[2].Allocate(1750);
+	af[3].Allocate(384);
+	FrameAligner fa;
+	for (int i = 0; i < 4; i++)
+	{
+		AudioFrame afout;
+		fa.Input(af[i]);
+		printf("Input %d frames\n", af[i].nSamples);
+		while (fa.Output(&afout))
+		{
+			printf("Ouput %d frames\n", afout.nSamples);
+			afout.Release();
+		}
+	}
 	WCHAR cwd[512];
 	GetCurrentDirectory(512, cwd);
 	std::wcout << cwd << std::endl;

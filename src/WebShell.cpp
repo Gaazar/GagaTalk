@@ -283,18 +283,26 @@ int web_init(int port)
 		response.code = 400;
 		response.write(crow::json::wvalue({ {"code",11002},{"msg","id not avaliable."} }).dump());
 		});
-	CROW_ROUTE(app, "/api/client/username").methods("POST"_method)([](const crow::request& req) {
+	CROW_ROUTE(app, "/api/profile/username").methods("POST"_method)([](const crow::request& req) {
 		crow::response response;
 		response.set_header("Content-Type", "application/json");
 		auto& p = req.get_body_params();
-		char* id = p.get("name");
+		char* id = p.get("username");
 		if (!id)
 		{
 			response.code = 400;
 			response.write(crow::json::wvalue({ {"code",10001},{"msg","name is not provided."} }).dump());
 			return response;
 		}
-		conf_set_username(id);
+		conf_set_username(sutil::u82a(id));
+		return response;
+		});
+	CROW_ROUTE(app, "/api/profile/username").methods("GET"_method)([](const crow::request& req) {
+		crow::response response;
+		response.set_header("Content-Type", "application/json");
+		std::string uname;
+		conf_get_username(uname);
+		response.write(to_string(configor::json({ {"username",uname} })));
 		return response;
 		});
 

@@ -123,7 +123,7 @@ int sapi_init()
 		if (!c) return;
 		if (t == event::join)
 		{
-			sapi_say(fmt::format("已加入服务器'{}'。", c->host));
+			sapi_say(fmt::format("已加入服务器'{}'。", c->name));
 		}
 		else if (t == event::auth)
 		{
@@ -131,7 +131,7 @@ int sapi_init()
 		}
 		else if (t == event::left)
 		{
-			sapi_say(fmt::format("已离开服务器'{}'。", c->host));
+			sapi_say(fmt::format("已离开服务器'{}'。", c->name));
 		}
 	};
 	e_channel += [](event t, channel* c)

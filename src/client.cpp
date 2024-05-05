@@ -38,7 +38,6 @@ void connection::on_recv_cmd(command& cmd)
 					conf_set_token(host, suid, cmd["-t"]);
 				}
 				//sapi_join_server(host);
-				e_server(event::join, this);
 			}
 			else
 			{
@@ -56,6 +55,8 @@ void connection::on_recv_cmd(command& cmd)
 			if (cmd.has_option("-sd"))
 				this->description = cmd["-sd"];
 			conf_set_server(*this);
+			e_server(event::join, this);
+
 		}
 	}
 	else
