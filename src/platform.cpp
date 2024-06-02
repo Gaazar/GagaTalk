@@ -25,7 +25,7 @@
 #pragma comment(lib,"opus.lib")
 #pragma comment(lib,"avrt.lib")
 
-#define REFTIMES_PER_SEC  200000//25ms //10000000 = 1s
+#define REFTIMES_PER_SEC  200000//20ms //10000000 = 1s
 #define SAFE_RELEASE(x) if(x) x->Release();x = nullptr
 #define CHECK_HR
 
@@ -684,6 +684,10 @@ int voice_playback::play_thread()
 				printf("UNKNOWN_ERROR:%d at voice_playback\n", hr);
 			}
 			int min_smp = min(f.nSamples, frames);
+			if (frames < f.nSamples)
+			{
+				printf("AVALIABLE BUFFER LESS THEN INPUT BUFFER.\n");
+			}
 			for (int i = 0; i < min_smp; i++)
 			{
 				for (int c = 0; c < wfmt->nChannels; c++)

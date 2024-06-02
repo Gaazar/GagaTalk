@@ -60,19 +60,22 @@ bool FrameAligner::Input(AudioFrame& in_f)
 	const int nc = nChannel;
 	if (nBuffered + nf >= tnf)
 	{
-		//buffered size larger than target, can output a frame
+		//缓冲区和新的组的尺寸大于或等于一个输出组的长度，能够产生输出组
 		int ob = 0;
 		int oi = 0;
 		while (nBuffered + nf >= tnf + ob + oi)
 		{
+			//能够继续产生新的输出组
 			frames.emplace_back();
 			frames[frames.size() - 1].Allocate(target_size, nullptr, nChannel);
 			AudioFrame& f = frames[frames.size() - 1];
 			if (nBuffered)
 			{
+				//缓冲区有数据，先将其中的数据添加进输出组
 				ob = nBuffered;
 				memcpy(f.samples, buffer, nBuffered * nbs);
 			}
+			//将输入组的数据拷贝到输出组
 			memcpy(f.samples + ob * nc, in_f.samples + oi * nc, (target_size - ob) * nbs);
 			oi += target_size - ob;
 			ob = 0;
@@ -83,6 +86,7 @@ bool FrameAligner::Input(AudioFrame& in_f)
 	}
 	else
 	{
+		//缓冲区和新的组的尺寸小于一个输出组的长度，不能输出组，缓存到缓冲区等待和下一组拼接
 		memcpy(buffer + nBuffered * nc, in_f.samples, nf * nbs);
 		nBuffered += nf;
 	}

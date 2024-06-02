@@ -387,6 +387,7 @@ void connection::channel_switch(uint32_t from, uint32_t to)
 	if (channels.count(to))
 	{
 		current = channels[to];
+		chid = to;
 		e_channel(event::join, std::move(current));
 		for (auto i : current->entities)
 		{

@@ -180,23 +180,21 @@ int instance::voip_recv_thread()
 			uint32_t ssid = 0;
 			connection* conn = nullptr;
 			if (connections.count(suid))
-			{
+			{//是由用户发送的
 				conn = connections[suid];
 				edcrypt_voip_pack(buffer, len, conn->cert_code);
 				ssid = *((uint32_t*)&buffer[4]);
 				if (channels.count(conn->current_chid) && channels[conn->current_chid]->session_id != ssid)
-				{
+				{//用户所在频道与数据包目的频道不一致，丢弃
 					continue;
 				}
 				if (!cmpsaddr(&from, &conn->addr))
-				{
+				{//修正NAT切换造成的IP地址与端口变化
 					conn->addr = from;
 					printf("[I]: Connection[%lld] voip address changed to %s:%d\n", conn->sk_cmd, inet_ntoa(from.sin_addr), from.sin_port);
-					// if (*(uint32_t *)buffer != (cli->suid & 0xffffffff))
-					//     return 0;
 				}
 				if (conn->state.man_mute)
-					continue;
+					continue;//用户被服务端闭麦，丢弃数据包
 			}
 			else
 			{
@@ -211,7 +209,7 @@ int instance::voip_recv_thread()
 					*(uint32_t*)&buffer[4] = (uint32_t)conn->stts.cm_tx;
 					conn->stts.vo_tx_nb += len;
 					conn->stts.vo_tx_np++;
-					cn.second->broadcast_voip_pak(buffer, len, suid);
+					cn.second->broadcast_voip_pak(buffer, len, suid);//广播数据包给频道
 					break;
 				}
 			}
