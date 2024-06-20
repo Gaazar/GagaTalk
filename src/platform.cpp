@@ -862,6 +862,7 @@ int voice_recorder_loopback::record_thread()
 {
 	BYTE* pcm = nullptr;
 	auto hr = aud_cli->Start();
+	AudioFrame* f_c = new AudioFrame[wfmt->nChannels];
 	while (!discard && !discarded)
 	{
 		UINT packsz;
@@ -886,7 +887,6 @@ int voice_recorder_loopback::record_thread()
 				f.Allocate(numFramesAvailable, (float*)pcm, wfmt->nChannels);
 				if (wfmt->nChannels > 1)
 				{
-					AudioFrame* f_c = new AudioFrame[wfmt->nChannels];
 					ChannelUtil::Split(f, f_c);
 					f.Release();
 					f.Allocate(f_c[0].nSamples, f_c[0].samples);
@@ -894,7 +894,6 @@ int voice_recorder_loopback::record_thread()
 					{
 						f_c[i].Release();
 					}
-					delete[] f_c;
 				}
 				if (wfmt->nSamplesPerSec != 48000)
 				{

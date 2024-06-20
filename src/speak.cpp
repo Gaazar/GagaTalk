@@ -119,45 +119,47 @@ int sapi_init()
 		sapi_set_profile(pf);
 
 	e_server += [](event t, connection* c)
-	{
-		if (!c) return;
-		if (t == event::join)
 		{
-			sapi_say(fmt::format("已加入服务器'{}'。", c->name));
-		}
-		else if (t == event::auth)
-		{
+			if (!c) return;
+			if (t == event::join)
+			{
+				sapi_say(fmt::format("已加入服务器'{}'。", c->name));
+			}
+			else if (t == event::auth)
+			{
 
-		}
-		else if (t == event::left)
-		{
-			sapi_say(fmt::format("已离开服务器'{}'。", c->name));
-		}
-	};
+			}
+			else if (t == event::left)
+			{
+				sapi_say(fmt::format("已离开服务器'{}'。", c->name));
+			}
+		};
 	e_channel += [](event t, channel* c)
-	{
-		if (!c) return;
-		if (t == event::join)
 		{
-			sapi_say(fmt::format("已加入频道'{}'", c->name));
-		}
-		else if (t == event::left)
-		{
-			sapi_say(fmt::format("已离开频道'{}'", c->name));
-		}
-	};
+			if (!c) return;
+			if (t == event::join)
+			{
+				sapi_say(fmt::format("已加入频道'{}'", c->name));
+			}
+			else if (t == event::left)
+			{
+				sapi_say(fmt::format("已离开频道'{}'", c->name));
+			}
+		};
 	e_entity += [](event t, entity* e)
-	{
-		if (!e) return;
-		if (t == event::join)
 		{
-			sapi_say(fmt::format("‘{}’已加入频道。", e->name));
-		}
-		else if (t == event::left)
-		{
-			sapi_say(fmt::format("‘{}’已离开频道。", e->name));
-		}
-	};
+			if (!e) return;
+			if (t == event::join)
+			{
+				if (e->current_chid == e->conn->chid)
+					sapi_say(fmt::format("‘{}’已加入频道。", e->name));
+			}
+			else if (t == event::left)
+			{
+				if (e->current_chid == e->conn->chid)
+					sapi_say(fmt::format("‘{}’已离开频道。", e->name));
+			}
+		};
 
 	return 0;
 }

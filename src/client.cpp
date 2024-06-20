@@ -167,10 +167,9 @@ void connection::on_recv_cmd(command& cmd)
 						channels[e->current_chid]->join(e);
 					if (suid != this->suid)
 					{
-						if (e->current_chid == chid)
-						{
-							e_entity(event::join, std::move(e));
-						}
+
+						e_entity(event::join, std::move(e));
+
 					}
 
 				}
@@ -409,7 +408,7 @@ void channel::erase(entity* e)
 			break;
 		}
 	}
-	if (op && conn->current && chid == conn->current->chid && conn->status == connection::state::established)
+	if (op && conn->current && conn->status == connection::state::established)
 	{
 		if (e->suid == conn->suid)
 		{
@@ -417,7 +416,8 @@ void channel::erase(entity* e)
 		}
 		else
 			e_entity(event::left, std::move(e));
-		e->remove_playback();
+		if (chid == conn->current->chid)
+			e->remove_playback();
 	}
 }
 void channel::erase(uint32_t suid)
