@@ -36,7 +36,7 @@
     <ClCompile Include="Compressor.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="sqlite\sqlite3.c">
+    <ClCompile Include="..\3rd\sqlite\sqlite3.c">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="WebShell.cpp">
@@ -66,7 +66,7 @@
     <ClCompile Include="network.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="common.cpp">
+    <ClCompile Include="..\common.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -83,13 +83,13 @@
     <ClInclude Include="RingQueue.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="gt_defs.h">
+    <ClInclude Include="..\gt_defs.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="client.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="sql.h">
+    <ClInclude Include="..\sql.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="native_util.hpp">
@@ -101,22 +101,25 @@
     <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="delegate.h">
+    <ClInclude Include="..\delegate.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="events.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="logger.h">
+    <ClInclude Include="..\logger.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="web.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="cli.h">
+    <ClInclude Include="..\cli.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="pipe_stream.h">
+    <ClInclude Include="..\pipe_stream.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="network.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

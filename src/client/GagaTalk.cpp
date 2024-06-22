@@ -55,7 +55,7 @@ LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS lpExceptionInfo)
 	return GenerateMiniDump(lpExceptionInfo);
 }
 
-int main()
+int _main()
 {
 	SetUnhandledExceptionFilter(ExceptionFilter);
 

@@ -1,9 +1,9 @@
 #pragma once
 #include <mutex>
 #include <vector>
-#include "gt_defs.h"
+#include "../gt_defs.h"
 #include <thread>
-#include "sql.h"
+#include "../sql.h"
 #include <map>
 
 #ifdef _MSC_VER

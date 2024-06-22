@@ -58,8 +58,8 @@ struct RemoteClientDesc
 {
 	std::string name;
 	uint32_t suid = 0;
-	uint64_t uuid = 0;
 	uint32_t current_chid = 0;
+	uint64_t uuid = 0;
 	std::string avatar;
 };
 struct ChannelDesc

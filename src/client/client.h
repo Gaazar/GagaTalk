@@ -2,11 +2,11 @@
 #include <string>
 #include <vector>
 #include "IAudioFrameProcessor.h"
-#include "gt_defs.h"
+#include "../gt_defs.h"
 #include "RingQueue.h"
 #include <opus/opus.h>
 #include <functional>
-#include "cli.h"
+#include "../cli.h"
 #define BUILD_SEQ 28
 struct debug_info
 {
@@ -77,7 +77,6 @@ struct recorder_ref
 
 struct connection :ServerDesc
 {
-	plat_conn* plat = nullptr;
 	uint64_t suid;
 	std::map<uint32_t, channel*> channels;
 	std::map<uint64_t, entity*> entities;

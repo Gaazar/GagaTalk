@@ -7,7 +7,7 @@
 #ifdef __GNUC__
 typedef int SOCKET;
 #endif
-#include "gt_defs.h"
+#include "../gt_defs.h"
 
 
 SOCKET sk_lsn = 0;

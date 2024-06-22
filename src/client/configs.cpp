@@ -1,4 +1,3 @@
-#include "sqlite/sqlite3.h"
 #include <stdio.h>
 #include <assert.h>
 #include <functional>
@@ -7,7 +6,7 @@
 #include "client.h"
 #define FMT_HEADER_ONLY
 #include <fmt/core.h>
-#include "sql.h"
+#include "../sql.h"
 
 sqlite3* db = nullptr;
 int db_version = -1;

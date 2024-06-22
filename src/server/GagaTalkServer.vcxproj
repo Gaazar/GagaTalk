@@ -29,8 +29,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{9c3d35a4-7c98-471f-903d-94bffcc2b8ab}</ProjectGuid>
-    <RootNamespace>GagaTalk</RootNamespace>
+    <ProjectGuid>{c382b156-c261-40e2-bd31-1e3db11ad9e3}</ProjectGuid>
+    <RootNamespace>GagaTalkServer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -52,14 +52,12 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -107,28 +105,22 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <ExternalIncludePath>$(INCLUDE);$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>F:\libs\bin\debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>F:\Learn\VS\GagaTalk\GagaTalk;$(INCLUDE);$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
-    <ExecutablePath>F:\libs\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <LinkIncremental>true</LinkIncremental>
-    <ExternalIncludePath>$(INCLUDE);$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>F:\libs\debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>F:\Learn\VS\GagaTalk\GagaTalk;$(INCLUDE);$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>true</LinkIncremental>
-    <ExternalIncludePath>$(INCLUDE);$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>F:\libs\bin\release;$(LibraryPath)</LibraryPath>
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>F:\Learn\VS\GagaTalk\GagaTalk;$(INCLUDE);$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
-    <ExecutablePath>F:\libs\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <LinkIncremental>false</LinkIncremental>
-    <ExternalIncludePath>$(INCLUDE);$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>F:\libs\release;$(LibraryPath)</LibraryPath>
+    <IncludePath>F:\Learn\VS\GagaTalk\GagaTalk;$(INCLUDE);$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -163,9 +155,8 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -176,9 +167,8 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -191,10 +181,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <Optimization>MinSpace</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -209,10 +197,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <Optimization>MinSpace</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -222,49 +208,28 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="audio_process.cpp" />
-    <ClCompile Include="client.cpp" />
-    <ClCompile Include="CliShell.cpp" />
-    <ClCompile Include="common.cpp" />
-    <ClCompile Include="configs.cpp" />
-    <ClCompile Include="FrameAligner.cpp" />
-    <ClCompile Include="GagaTalk.cpp" />
-    <ClCompile Include="logger.cpp" />
-    <ClCompile Include="native_util.cpp" />
-    <ClCompile Include="network.cpp" />
-    <ClCompile Include="platform.cpp" />
-    <ClCompile Include="Resampler.cpp" />
-    <ClCompile Include="Socks.cpp" />
-    <ClCompile Include="Compressor.cpp" />
-    <ClCompile Include="speak.cpp" />
-    <ClCompile Include="sqlite\sqlite3.c" />
-    <ClCompile Include="WebShell.cpp" />
-    <ClCompile Include="trayicon.cpp" />
+    <ClInclude Include="db.h" />
+    <ClInclude Include="..\gt_defs.h" />
+    <ClInclude Include="permissions.h" />
+    <ClInclude Include="server.h" />
+    <ClInclude Include="..\sql.h" />
+    <ClInclude Include="..\3rd\sqlite\sqlite3.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AudioDevices.h" />
-    <ClInclude Include="audio_process.h" />
-    <ClInclude Include="cli.h" />
-    <ClInclude Include="client.h" />
-    <ClInclude Include="delegate.h" />
-    <ClInclude Include="events.h" />
-    <ClInclude Include="IAudioFrameProcessor.h" />
-    <ClInclude Include="logger.h" />
-    <ClInclude Include="native_util.hpp" />
-    <ClInclude Include="pipe_stream.h" />
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="RingQueue.h" />
-    <ClInclude Include="gt_defs.h" />
-    <ClInclude Include="sql.h" />
-    <ClInclude Include="trayicon.h" />
-    <ClInclude Include="web.h" />
+    <ClCompile Include="..\common.cpp" />
+    <ClCompile Include="db.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="server.cpp" />
+    <ClCompile Include="..\3rd\sqlite\sqlite3.c" />
+    <ClCompile Include="sv_conn.cpp" />
+    <ClCompile Include="sv_man.cpp" />
+    <ClCompile Include="sv_socket.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="GagaTalk.rc" />
+    <Text Include="..\Permission.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="D:\Picture\gagatalk.ico" />
-    <Image Include="D:\Picture\gagatalks.ico" />
+    <None Include="..\..\Makefile" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

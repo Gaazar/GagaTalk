@@ -4,9 +4,9 @@
 #include <functional>
 #include <map>
 #include <assert.h>
-#include "sql.h"
+#include "../sql.h"
 #include "server.h"
-#include "permissions.h"
+#include "../permissions.h"
 
 static int db_version = -1;
 static char* err_msg = nullptr;

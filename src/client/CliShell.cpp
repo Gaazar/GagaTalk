@@ -1,4 +1,4 @@
-#include "gt_defs.h"
+#include "../gt_defs.h"
 #include "client.h"
 #include <stdio.h>
 #include <sstream>
@@ -6,10 +6,10 @@
 #include <configor/json.hpp>
 #include "web.h"
 #include "events.h"
-#include "logger.h"
+#include "../logger.h"
 #include <fmt/core.h>
 #include <fmt/format.h>
-#include "cli.h"
+#include "../cli.h"
 
 #pragma comment(lib,"opus.lib")
 #define SESSION_ID 0x00FF8877 // 16746615
