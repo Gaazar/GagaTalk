@@ -1,5 +1,5 @@
 # 依赖
-c++ fmt
+[c++ fmt](https://github.com/fmtlib/fmt)
 # 单独构建
 ```
 make build
