@@ -67,5 +67,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Makefile" />
+    <None Include="..\gagatalk.service" />
   </ItemGroup>
 </Project>

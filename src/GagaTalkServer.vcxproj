@@ -229,6 +229,7 @@
     <Text Include="Permission.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\gagatalk.service" />
     <None Include="..\Makefile" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

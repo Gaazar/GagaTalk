@@ -1,0 +1,13 @@
+[Unit]
+Description=GagaTalk Server
+
+[Service]
+ExecStart=~/GagaTalk/build/gts
+Restart=always
+User=pi
+Group=pi
+Environment=PATH=/usr/bin:/usr/local/bin
+WorkingDirectory=~/GagaTalk/build/
+
+[Install]
+WantedBy=multi-user.target

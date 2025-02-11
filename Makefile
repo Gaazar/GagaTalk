@@ -21,6 +21,7 @@ all: $(TARGET)
 
 $(TARGET) : $(OBJECTS) sqlite3.o
 	mkdir -p build
+	mkdir -p objs
 	$(XX) -o build/$@ $(addprefix $(OBJ_DIR)/, $(OBJECTS)) objs/sqlite3.o $(CFLAGS)
  
 %.o : %.cpp
